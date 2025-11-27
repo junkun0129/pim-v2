@@ -36,7 +36,8 @@ const SeriesModal: React.FC<{
     onClose: () => void;
     onSave: (series: Omit<Series, 'id' | 'childSkuIds'>) => void;
     dataMap: NonNullable<GenericManagerProps['dataMap']>;
-}> = ({ isOpen, onClose, onSave, dataMap }) => {
+    seriesToEdit?: Series;
+}> = ({ isOpen, onClose, onSave, dataMap, seriesToEdit }) => {
     
     const [name, setName] = useState('');
     const [categoryIds, setCategoryIds] = useState<string[]>([]);
@@ -44,6 +45,22 @@ const SeriesModal: React.FC<{
     const [attributeValues, setAttributeValues] = useState<Record<string, string>>({});
     const [imageUrl, setImageUrl] = useState('');
     const [isUploading, setIsUploading] = useState(false);
+
+    useEffect(() => {
+        if (seriesToEdit) {
+            setName(seriesToEdit.name);
+            setCategoryIds(seriesToEdit.categoryIds);
+            setAttributeSetIds(seriesToEdit.attributeSetIds);
+            setAttributeValues(seriesToEdit.attributeValues);
+            setImageUrl(seriesToEdit.imageUrl || '');
+        } else {
+            setName('');
+            setCategoryIds([]);
+            setAttributeSetIds([]);
+            setAttributeValues({});
+            setImageUrl('');
+        }
+    }, [seriesToEdit, isOpen]);
 
     const relevantAttributes = useMemo(() => {
         if (!attributeSetIds.length) return [];
@@ -55,12 +72,15 @@ const SeriesModal: React.FC<{
         return Array.from(attrIds).map(id => dataMap.attributes.find(a => a.id === id)).filter(Boolean) as Attribute[];
     }, [attributeSetIds, dataMap.attributeSets, dataMap.attributes]);
 
+    // Ensure attribute values keys exist when sets change, but preserve existing values
     useEffect(() => {
-        const newValues: Record<string, string> = {};
-        relevantAttributes.forEach(attr => {
-            newValues[attr.id] = attributeValues[attr.id] || '';
-        });
-        setAttributeValues(newValues);
+        const newValues: Record<string, string> = { ...attributeValues };
+        // relevantAttributes.forEach(attr => {
+        //     if (newValues[attr.id] === undefined) {
+        //         newValues[attr.id] = '';
+        //     }
+        // });
+        // setAttributeValues(newValues);
     }, [relevantAttributes]);
 
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,27 +113,19 @@ const SeriesModal: React.FC<{
 
     const handleSave = () => {
         if (name) {
-            onSave({ name, categoryIds, attributeSetIds, attributeValues, imageUrl: imageUrl || undefined });
+            onSave({ 
+                name, 
+                categoryIds, 
+                attributeSetIds, 
+                attributeValues, 
+                imageUrl: imageUrl || undefined 
+            });
             onClose();
         }
     };
     
-    const resetState = () => {
-        setName('');
-        setCategoryIds([]);
-        setAttributeSetIds([]);
-        setAttributeValues({});
-        setImageUrl('');
-    };
-
-    const handleClose = () => {
-        resetState();
-        onClose();
-    };
-
-
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} title="新規シリーズを追加">
+        <Modal isOpen={isOpen} onClose={onClose} title={seriesToEdit ? "シリーズを編集" : "新規シリーズを追加"}>
             <div className="space-y-4">
                 <Input label="シリーズ名" value={name} onChange={(e) => setName(e.target.value)} required />
                 
@@ -167,7 +179,7 @@ const SeriesModal: React.FC<{
                 )}
 
                 <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="secondary" onClick={handleClose}>キャンセル</Button>
+                    <Button variant="secondary" onClick={onClose}>キャンセル</Button>
                     <Button onClick={handleSave} disabled={isUploading}>
                          {isUploading ? '処理中...' : '保存'}
                     </Button>
@@ -263,6 +275,7 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
 
     const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
     const [editingSet, setEditingSet] = useState<AttributeSet | null>(null);
+    const [editingSeries, setEditingSeries] = useState<Series | undefined>(undefined);
 
     const handleSaveItem = () => {
         if (newItemName.trim()) {
@@ -270,6 +283,25 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
             setNewItemName('');
             setIsItemModalOpen(false);
         }
+    };
+
+    const handleSaveSeries = (seriesData: Omit<Series, 'id' | 'childSkuIds'>) => {
+        if (editingSeries && onUpdateSeries) {
+            onUpdateSeries({ ...editingSeries, ...seriesData });
+        } else {
+            onAdd(seriesData);
+        }
+        setEditingSeries(undefined);
+    };
+
+    const openSeriesCreate = () => {
+        setEditingSeries(undefined);
+        setIsItemModalOpen(true);
+    };
+
+    const openSeriesEdit = (series: Series) => {
+        setEditingSeries(series);
+        setIsItemModalOpen(true);
     };
 
     const openAttributeModal = (set: AttributeSet) => {
@@ -393,7 +425,10 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <Button onClick={() => onDelete(series.id)} variant="danger" size="sm">{ICONS.trash}</Button>
+                                        <div className="flex items-center gap-2">
+                                            <Button onClick={() => openSeriesEdit(series)} variant="secondary" size="sm">編集</Button>
+                                            <Button onClick={() => onDelete(series.id)} variant="danger" size="sm">{ICONS.trash}</Button>
+                                        </div>
                                     </td>
                                 </tr>
                             )
@@ -418,7 +453,7 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <h1 className="text-3xl font-bold text-slate-800 dark:text-white">{title}</h1>
-                <Button onClick={() => setIsItemModalOpen(true)}>
+                <Button onClick={() => title === 'シリーズ' ? openSeriesCreate() : setIsItemModalOpen(true)}>
                     {ICONS.plus}
                     新規{singularTitle}を追加
                 </Button>
@@ -448,7 +483,13 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
             )}
             
             {title === 'シリーズ' && dataMap && (
-                <SeriesModal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} onSave={onAdd} dataMap={dataMap} />
+                <SeriesModal 
+                    isOpen={isItemModalOpen} 
+                    onClose={() => setIsItemModalOpen(false)} 
+                    onSave={handleSaveSeries} 
+                    dataMap={dataMap} 
+                    seriesToEdit={editingSeries}
+                />
             )}
             
             {title === 'カテゴリ' && (

@@ -77,6 +77,7 @@ export interface Order {
     quantity: number;
     status: OrderStatus;
     orderDate: string;
+    driverId?: string; // Assigned driver
 }
 
 export interface CustomerOrder {
@@ -87,6 +88,34 @@ export interface CustomerOrder {
     totalPrice: number;
     orderDate: string;
     status: 'PROCESSING' | 'SHIPPED' | 'DELIVERED';
+}
+
+export interface Complaint {
+    id: string;
+    branchId: string;
+    title: string;
+    content: string;
+    status: 'OPEN' | 'RESOLVED';
+    createdAt: string;
+    response?: string;
+}
+
+export interface Driver {
+    id: string;
+    name: string;
+    phone: string;
+    status: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+    currentLocation?: string;
+}
+
+export interface StockTransfer {
+    id: string;
+    fromBranchId: string;
+    toBranchId: string;
+    skuId: string;
+    quantity: number;
+    status: 'REQUESTED' | 'SHIPPED' | 'COMPLETED';
+    date: string;
 }
 
 export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG' | 'PROJECTS';

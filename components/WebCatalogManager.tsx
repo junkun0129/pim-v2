@@ -190,12 +190,14 @@ export default function WebCatalogManager({ catalogs, skus, categories, series, 
                                                  <p className="font-bold text-lg" style={{ color: editColor }}>¥{sku.price?.toLocaleString()}</p>
                                              </div>
                                          </div>
-                                         <button 
-                                            className="w-full py-4 rounded-xl font-bold text-white shadow-lg transition-transform hover:-translate-y-1"
-                                            style={{ backgroundColor: editColor }}
-                                         >
-                                             詳しく見る
-                                         </button>
+                                         <div className="pt-4">
+                                            <button 
+                                                className="w-full py-4 rounded-xl font-bold text-white shadow-lg transition-transform hover:-translate-y-1"
+                                                style={{ backgroundColor: editColor }}
+                                            >
+                                                詳しく見る
+                                            </button>
+                                         </div>
                                      </div>
                                  </div>
                              </div>

@@ -164,7 +164,7 @@ export default function ProjectManager({ projects, onCreateProject, currentUserI
     const renderChat = () => (
         <div className="flex flex-col h-[600px] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
             {/* Header */}
-            <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex items-center gap-2">
+            <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex items-center gap-2 shrink-0">
                 {ICONS.chat} <span className="font-bold text-slate-700 dark:text-slate-200">チームチャット</span>
             </div>
             
@@ -191,8 +191,8 @@ export default function ProjectManager({ projects, onCreateProject, currentUserI
                 )}
             </div>
 
-            {/* Input */}
-            <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            {/* Input - Fixed at bottom */}
+            <div className="p-4 border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0">
                 <div className="flex gap-2">
                     <input
                         type="text"
@@ -204,7 +204,7 @@ export default function ProjectManager({ projects, onCreateProject, currentUserI
                     />
                     <button 
                         onClick={handleSendMessage}
-                        className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                        className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-md"
                     >
                         {ICONS.send}
                     </button>
@@ -215,7 +215,7 @@ export default function ProjectManager({ projects, onCreateProject, currentUserI
 
     const renderBrainstorming = () => (
         <div className="h-[600px] flex flex-col gap-4">
-            <div className="flex gap-2 bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+            <div className="flex gap-2 bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 shrink-0">
                 <Input 
                     value={ideaInput} 
                     onChange={(e) => setIdeaInput(e.target.value)} 
@@ -302,7 +302,7 @@ export default function ProjectManager({ projects, onCreateProject, currentUserI
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-zinc-200 dark:border-zinc-800 px-6 bg-white dark:bg-zinc-900">
+            <div className="flex border-b border-zinc-200 dark:border-zinc-800 px-6 bg-white dark:bg-zinc-900 shrink-0">
                  <button
                     onClick={() => setActiveTab('CHAT')}
                     className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'CHAT' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}

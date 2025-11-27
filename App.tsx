@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder, WebCatalog, Project } from './types';
+import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder, WebCatalog, Project, Complaint, Driver, StockTransfer } from './types';
 import Sidebar from './components/Sidebar';
 import SkuView from './components/SkuView';
 import GenericManager from './components/GenericManager';
@@ -10,7 +10,7 @@ import EcService from './components/EcService';
 import CreativeStudio from './components/CreativeStudio';
 import WebCatalogManager from './components/WebCatalogManager';
 import ProjectManager from './components/ProjectManager';
-import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS, MOCK_CATALOGS, MOCK_PROJECTS } from './mockData';
+import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS, MOCK_CATALOGS, MOCK_PROJECTS, MOCK_COMPLAINTS, MOCK_DRIVERS, MOCK_TRANSFERS } from './mockData';
 import { APP_CONFIG } from './config';
 import { api } from './api';
 import { ToastContainer, ToastMessage, ToastType } from './components/ui/Toast';
@@ -28,6 +28,9 @@ export default function App() {
     const [inventory, setInventory] = useState<Inventory[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([]);
+    const [complaints, setComplaints] = useState<Complaint[]>([]);
+    const [drivers, setDrivers] = useState<Driver[]>([]);
+    const [transfers, setTransfers] = useState<StockTransfer[]>([]);
     const [currentBranchId, setCurrentBranchId] = useState<string>('br1');
 
     // New Web Catalog State
@@ -64,6 +67,9 @@ export default function App() {
             setInventory(MOCK_INVENTORY);
             setOrders(MOCK_ORDERS);
             setCustomerOrders(MOCK_CUSTOMER_ORDERS);
+            setComplaints(MOCK_COMPLAINTS);
+            setDrivers(MOCK_DRIVERS);
+            setTransfers(MOCK_TRANSFERS);
             setCatalogs(MOCK_CATALOGS);
             setProjects(MOCK_PROJECTS);
 
@@ -131,6 +137,13 @@ export default function App() {
             }
         }, 'SKUを追加しました');
     };
+
+    const updateSku = async (sku: Sku) => {
+        await wrapMutation(async () => {
+            if (!APP_CONFIG.useMockData) await api.updateSku(sku);
+            setSkus(prev => prev.map(s => s.id === sku.id ? sku : s));
+        }, 'SKUを更新しました');
+    };
     
     // Batch Import Logic
     const importSkus = async (newSkus: Omit<Sku, 'id'>[]) => {
@@ -142,12 +155,9 @@ export default function App() {
                 }));
                 setSkus(prev => [...prev, ...skusWithIds]);
             } else {
-                // Real backend would ideally have a bulk create endpoint
-                // For now, we will loop sequentially (not efficient, but works for demo)
                 for (const sku of newSkus) {
                     await api.createSku(sku);
                 }
-                // Refresh data
                 const data = await api.fetchAllData();
                 setSkus(data.skus || []);
             }
@@ -226,7 +236,6 @@ export default function App() {
             const idsToDelete = new Set<string>([id]);
             let currentLayer = [id];
             
-            // Breadth-first search for descendants in local state
             while(currentLayer.length > 0) {
                 const nextLayer: string[] = [];
                 categories.forEach(c => {
@@ -281,7 +290,6 @@ export default function App() {
 
     // --- OMS Actions ---
     const createOrder = (orderData: Omit<Order, 'id' | 'status' | 'orderDate'>) => {
-        // This is a mock action for now
         const newOrder: Order = {
             id: `ord-${Date.now()}`,
             ...orderData,
@@ -290,6 +298,64 @@ export default function App() {
         };
         setOrders(prev => [newOrder, ...prev]);
         addToast('success', '発注依頼を送信しました');
+    };
+
+    const handleReplyComplaint = (id: string, response: string) => {
+        setComplaints(prev => prev.map(c => c.id === id ? { ...c, response, status: 'RESOLVED' } : c));
+        addToast('success', 'メッセージに返信しました');
+    };
+
+    const handleRegisterDriver = (driver: Omit<Driver, 'id'>) => {
+        const newDriver: Driver = { ...driver, id: `drv-${Date.now()}` };
+        setDrivers(prev => [...prev, newDriver]);
+        addToast('success', 'ドライバーを登録しました');
+    };
+
+    const handleAssignDriver = (orderId: string, driverId: string) => {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, driverId, status: 'SHIPPED' } : o));
+        addToast('success', 'ドライバーを割り当て、配送を開始しました');
+    };
+
+    const handleTransferStock = (transferData: Omit<StockTransfer, 'id' | 'status' | 'date'>) => {
+        // 1. Deduct from Source
+        const sourceInventory = inventory.find(i => i.skuId === transferData.skuId && i.branchId === transferData.fromBranchId);
+        if (!sourceInventory || sourceInventory.quantity < transferData.quantity) {
+            addToast('error', '移動元の在庫が不足しています');
+            return;
+        }
+
+        // 2. Add Transfer Record
+        const newTransfer: StockTransfer = {
+            id: `tr-${Date.now()}`,
+            ...transferData,
+            status: 'COMPLETED', // Immediate for mock
+            date: new Date().toISOString().split('T')[0]
+        };
+        setTransfers(prev => [...prev, newTransfer]);
+
+        // 3. Update Inventory (Immediate Transfer for Demo)
+        setInventory(prev => {
+            const temp = [...prev];
+            // Deduct Source
+            const srcIdx = temp.findIndex(i => i.skuId === transferData.skuId && i.branchId === transferData.fromBranchId);
+            if (srcIdx >= 0) temp[srcIdx] = { ...temp[srcIdx], quantity: temp[srcIdx].quantity - transferData.quantity };
+            
+            // Add Destination
+            const destIdx = temp.findIndex(i => i.skuId === transferData.skuId && i.branchId === transferData.toBranchId);
+            if (destIdx >= 0) {
+                temp[destIdx] = { ...temp[destIdx], quantity: temp[destIdx].quantity + transferData.quantity };
+            } else {
+                temp.push({ 
+                    skuId: transferData.skuId, 
+                    branchId: transferData.toBranchId, 
+                    quantity: transferData.quantity, 
+                    lastUpdated: new Date().toISOString().split('T')[0] 
+                });
+            }
+            return temp;
+        });
+
+        addToast('success', '在庫移動が完了しました');
     };
 
     // --- EC Actions ---
@@ -334,9 +400,6 @@ export default function App() {
 
     // --- Creative Studio Actions ---
     const handleSaveAsset = async (skuId: string, assetName: string, assetDataUrl: string) => {
-        // In a real app, you would upload the assetDataUrl (blob) to S3 here
-        // For now, we store the Data URL directly
-        
         const newAsset = {
             id: `asset-${Date.now()}`,
             type: 'DESIGN' as const,
@@ -424,7 +487,7 @@ export default function App() {
 
         switch (activeView) {
             case 'SKUs':
-                return <SkuView skus={skus} dataMap={dataMap} addSku={addSku} deleteSku={deleteSku} onViewSku={handleViewSku} onImportSkus={importSkus} />;
+                return <SkuView skus={skus} dataMap={dataMap} addSku={addSku} updateSku={updateSku} deleteSku={deleteSku} onViewSku={handleViewSku} onImportSkus={importSkus} />;
             case 'SKU_DETAIL': {
                 const selectedSku = skus.find(s => s.id === selectedSkuId);
                 if (!selectedSku) {
@@ -449,7 +512,14 @@ export default function App() {
                         branches={branches} 
                         inventory={inventory} 
                         orders={orders} 
+                        complaints={complaints}
+                        drivers={drivers}
+                        transfers={transfers}
                         onCreateOrder={createOrder}
+                        onReplyComplaint={handleReplyComplaint}
+                        onRegisterDriver={handleRegisterDriver}
+                        onAssignDriver={handleAssignDriver}
+                        onTransferStock={handleTransferStock}
                         currentBranchId={currentBranchId}
                         setCurrentBranchId={setCurrentBranchId}
                     />
@@ -493,7 +563,7 @@ export default function App() {
                     />
                 )
             default:
-                return <SkuView skus={skus} dataMap={dataMap} addSku={addSku} deleteSku={deleteSku} onViewSku={handleViewSku} />;
+                return <SkuView skus={skus} dataMap={dataMap} addSku={addSku} updateSku={updateSku} deleteSku={deleteSku} onViewSku={handleViewSku} />;
         }
     };
 

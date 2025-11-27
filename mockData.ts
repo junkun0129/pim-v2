@@ -1,5 +1,5 @@
 
-import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate, WebCatalog, User, Project, ChatMessage, BrainstormIdea } from './types';
+import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate, WebCatalog, User, Project, ChatMessage, BrainstormIdea, Complaint, Driver, StockTransfer } from './types';
 
 export const MOCK_CATEGORIES: Category[] = [
     { id: 'cat1', name: '日用品' },
@@ -78,13 +78,27 @@ export const MOCK_INVENTORY: Inventory[] = [
 
 export const MOCK_ORDERS: Order[] = [
     { id: 'ord1', branchId: 'br1', skuId: 'sku3', quantity: 10, status: 'RECEIVED', orderDate: '2023-10-01' },
-    { id: 'ord2', branchId: 'br2', skuId: 'sku1', quantity: 50, status: 'SHIPPED', orderDate: '2023-10-24' },
+    { id: 'ord2', branchId: 'br2', skuId: 'sku1', quantity: 50, status: 'SHIPPED', orderDate: '2023-10-24', driverId: 'drv1' },
     { id: 'ord3', branchId: 'br2', skuId: 'sku2', quantity: 20, status: 'PENDING', orderDate: '2023-10-26' },
 ];
 
 export const MOCK_CUSTOMER_ORDERS: CustomerOrder[] = [
     { id: 'co1', customerName: '山田 太郎', skuId: 'sku1', quantity: 1, totalPrice: 149800, orderDate: '2023-10-26 14:30', status: 'SHIPPED' },
     { id: 'co2', customerName: '鈴木 花子', skuId: 'sku4', quantity: 5, totalPrice: 1900, orderDate: '2023-10-26 15:45', status: 'PROCESSING' },
+];
+
+export const MOCK_COMPLAINTS: Complaint[] = [
+    { id: 'comp1', branchId: 'br1', title: '配送遅延について', content: '昨日到着予定の荷物がまだ届いていません。', status: 'OPEN', createdAt: '2023-10-26' },
+    { id: 'comp2', branchId: 'br3', title: '破損報告', content: '到着したSKU-001の箱が潰れていました。交換をお願いします。', status: 'RESOLVED', createdAt: '2023-10-20', response: '代替品を発送しました。' },
+];
+
+export const MOCK_DRIVERS: Driver[] = [
+    { id: 'drv1', name: '佐藤 運送', phone: '090-1111-2222', status: 'BUSY', currentLocation: '大阪市内配送中' },
+    { id: 'drv2', name: '鈴木 急便', phone: '090-3333-4444', status: 'AVAILABLE', currentLocation: '東京営業所待機' },
+];
+
+export const MOCK_TRANSFERS: StockTransfer[] = [
+    { id: 'tr1', fromBranchId: 'br1', toBranchId: 'br2', skuId: 'sku1', quantity: 5, status: 'COMPLETED', date: '2023-10-25' },
 ];
 
 export const MOCK_POP_TEMPLATES: PopTemplate[] = [

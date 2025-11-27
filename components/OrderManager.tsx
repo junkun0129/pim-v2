@@ -1,11 +1,12 @@
 
 import React, { useState, useMemo } from 'react';
-import type { Sku, Branch, Inventory, Order, Series } from '../types';
+import type { Sku, Branch, Inventory, Order, Series, Complaint, Driver, StockTransfer } from '../types';
 import Card from './ui/Card';
 import Button from './ui/Button';
 import Badge from './ui/Badge';
 import Modal from './ui/Modal';
 import Input from './ui/Input';
+import Select from './ui/Select';
 import { ICONS } from '../constants';
 
 interface OrderManagerProps {
@@ -14,7 +15,14 @@ interface OrderManagerProps {
     branches: Branch[];
     inventory: Inventory[];
     orders: Order[];
+    complaints: Complaint[];
+    drivers: Driver[];
+    transfers: StockTransfer[];
     onCreateOrder: (order: Omit<Order, 'id' | 'status' | 'orderDate'>) => void;
+    onReplyComplaint: (id: string, response: string) => void;
+    onRegisterDriver: (driver: Omit<Driver, 'id'>) => void;
+    onAssignDriver: (orderId: string, driverId: string) => void;
+    onTransferStock: (transfer: Omit<StockTransfer, 'id' | 'status' | 'date'>) => void;
     currentBranchId: string;
     setCurrentBranchId: (id: string) => void;
 }
@@ -24,16 +32,45 @@ export default function OrderManager({
     series,
     branches, 
     inventory, 
-    orders, 
+    orders,
+    complaints,
+    drivers,
+    transfers,
     onCreateOrder,
+    onReplyComplaint,
+    onRegisterDriver,
+    onAssignDriver,
+    onTransferStock,
     currentBranchId,
     setCurrentBranchId
 }: OrderManagerProps) {
-    const [activeTab, setActiveTab] = useState<'INVENTORY' | 'HISTORY'>('INVENTORY');
+    const [activeTab, setActiveTab] = useState<'INVENTORY' | 'HISTORY' | 'MESSAGES' | 'LOGISTICS' | 'TRANSFER'>('INVENTORY');
+    
+    // Order Modal State
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
     const [selectedSkuForOrder, setSelectedSkuForOrder] = useState<string | null>(null);
     const [orderQuantity, setOrderQuantity] = useState<number>(10);
+    
+    // Branch Dropdown State
     const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
+
+    // Complaint State
+    const [replyText, setReplyText] = useState('');
+    const [selectedComplaintId, setSelectedComplaintId] = useState<string | null>(null);
+
+    // Driver State
+    const [isDriverModalOpen, setIsDriverModalOpen] = useState(false);
+    const [newDriverName, setNewDriverName] = useState('');
+    const [newDriverPhone, setNewDriverPhone] = useState('');
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+    const [selectedDriverId, setSelectedDriverId] = useState<string>('');
+
+    // Transfer State
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+    const [transferTargetBranch, setTransferTargetBranch] = useState('');
+    const [transferSkuId, setTransferSkuId] = useState('');
+    const [transferQty, setTransferQty] = useState(1);
 
     const currentBranch = branches.find(b => b.id === currentBranchId) || branches[0];
 
@@ -60,6 +97,15 @@ export default function OrderManager({
             .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
     }, [orders, currentBranchId]);
 
+    const branchComplaints = useMemo(() => {
+        return complaints.filter(c => c.branchId === currentBranchId);
+    }, [complaints, currentBranchId]);
+
+    const branchTransfers = useMemo(() => {
+        return transfers.filter(t => t.fromBranchId === currentBranchId || t.toBranchId === currentBranchId);
+    }, [transfers, currentBranchId]);
+
+    // Handlers
     const handleOpenOrderModal = (skuId: string) => {
         setSelectedSkuForOrder(skuId);
         setOrderQuantity(10);
@@ -77,7 +123,49 @@ export default function OrderManager({
         }
     };
 
+    const handleSendReply = () => {
+        if (selectedComplaintId && replyText) {
+            onReplyComplaint(selectedComplaintId, replyText);
+            setReplyText('');
+            setSelectedComplaintId(null);
+        }
+    };
+
+    const handleSubmitDriver = () => {
+        if (newDriverName && newDriverPhone) {
+            onRegisterDriver({ name: newDriverName, phone: newDriverPhone, status: 'AVAILABLE', currentLocation: '待機中' });
+            setIsDriverModalOpen(false);
+            setNewDriverName('');
+            setNewDriverPhone('');
+        }
+    };
+
+    const handleAssignDriverSubmit = () => {
+        if (selectedOrderId && selectedDriverId) {
+            onAssignDriver(selectedOrderId, selectedDriverId);
+            setIsAssignModalOpen(false);
+            setSelectedOrderId(null);
+            setSelectedDriverId('');
+        }
+    };
+
+    const handleTransferSubmit = () => {
+        if (transferTargetBranch && transferSkuId && transferQty > 0) {
+            onTransferStock({
+                fromBranchId: currentBranchId,
+                toBranchId: transferTargetBranch,
+                skuId: transferSkuId,
+                quantity: transferQty
+            });
+            setIsTransferModalOpen(false);
+        }
+    };
+
     const getSkuName = (id: string) => skus.find(s => s.id === id)?.name || id;
+    const getBranchName = (id: string) => branches.find(b => b.id === id)?.name || id;
+    const getDriverName = (id?: string) => drivers.find(d => d.id === id)?.name || '未割り当て';
+
+    // --- Render Tabs ---
 
     const renderInventoryTab = () => (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
@@ -171,6 +259,11 @@ export default function OrderManager({
                                     </h4>
                                     <p className="text-sm text-slate-600 dark:text-slate-300">
                                         注文数: <span className="font-bold">{order.quantity}</span> 個
+                                        {order.driverId && (
+                                            <span className="ml-2 text-zinc-500">
+                                                (担当: {getDriverName(order.driverId)})
+                                            </span>
+                                        )}
                                     </p>
                                 </div>
                             </div>
@@ -178,14 +271,122 @@ export default function OrderManager({
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusColor}`}>
                                     {statusLabel}
                                 </span>
-                                <div className="text-right text-xs text-slate-400">
-                                    ORDER ID: {order.id}
-                                </div>
+                                {order.status === 'APPROVED' && (
+                                    <Button size="sm" onClick={() => { setSelectedOrderId(order.id); setIsAssignModalOpen(true); }}>
+                                        ドライバー手配
+                                    </Button>
+                                )}
                             </div>
                         </Card>
                     );
                 })
             )}
+        </div>
+    );
+
+    const renderMessagesTab = () => (
+        <div className="space-y-4">
+            <h3 className="font-bold text-lg text-slate-800 dark:text-white mb-4">本部への連絡・報告</h3>
+            {branchComplaints.length === 0 ? (
+                <p className="text-slate-500">メッセージはありません。</p>
+            ) : (
+                branchComplaints.map(comp => (
+                    <Card key={comp.id} className="border-l-4 border-l-red-500">
+                        <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-bold text-slate-900 dark:text-white">{comp.title}</h4>
+                            <span className="text-xs text-slate-400">{comp.createdAt}</span>
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-300 mb-4">{comp.content}</p>
+                        
+                        {comp.response ? (
+                            <div className="bg-slate-50 dark:bg-zinc-800 p-3 rounded-lg border border-slate-200 dark:border-zinc-700">
+                                <p className="text-xs font-bold text-slate-500 mb-1">本部からの回答:</p>
+                                <p className="text-sm text-slate-700 dark:text-slate-200">{comp.response}</p>
+                            </div>
+                        ) : (
+                            <div className="mt-4 border-t pt-4 dark:border-zinc-700">
+                                {selectedComplaintId === comp.id ? (
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            value={replyText} 
+                                            onChange={(e) => setReplyText(e.target.value)}
+                                            className="flex-1 border rounded px-3 py-1 text-sm dark:bg-zinc-900 dark:border-zinc-700"
+                                            placeholder="返信を入力..."
+                                        />
+                                        <Button size="sm" onClick={handleSendReply}>送信</Button>
+                                        <Button size="sm" variant="secondary" onClick={() => setSelectedComplaintId(null)}>取消</Button>
+                                    </div>
+                                ) : (
+                                    <Button size="sm" variant="secondary" onClick={() => setSelectedComplaintId(comp.id)}>
+                                        返信する
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+                    </Card>
+                ))
+            )}
+        </div>
+    );
+
+    const renderLogisticsTab = () => (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg text-slate-800 dark:text-white">登録ドライバー一覧</h3>
+                <Button onClick={() => setIsDriverModalOpen(true)}>{ICONS.plus} ドライバー登録</Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {drivers.map(driver => (
+                    <Card key={driver.id} className="flex items-center justify-between">
+                        <div>
+                            <h4 className="font-bold text-slate-900 dark:text-white">{driver.name}</h4>
+                            <p className="text-sm text-slate-500">{driver.phone}</p>
+                            <p className="text-xs text-slate-400 mt-1">現在地: {driver.currentLocation}</p>
+                        </div>
+                        <Badge color={driver.status === 'AVAILABLE' ? 'green' : driver.status === 'BUSY' ? 'red' : 'gray'}>
+                            {driver.status}
+                        </Badge>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
+
+    const renderTransferTab = () => (
+        <div className="space-y-6">
+             <div className="flex justify-between items-center">
+                <h3 className="font-bold text-lg text-slate-800 dark:text-white">店舗間在庫移動</h3>
+                <Button onClick={() => setIsTransferModalOpen(true)}>{ICONS.plus} 在庫移動指示</Button>
+            </div>
+
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                        <tr>
+                            <th className="px-6 py-3">日付</th>
+                            <th className="px-6 py-3">移動元</th>
+                            <th className="px-6 py-3">移動先</th>
+                            <th className="px-6 py-3">商品</th>
+                            <th className="px-6 py-3">数量</th>
+                            <th className="px-6 py-3">ステータス</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {branchTransfers.map(tr => (
+                            <tr key={tr.id} className="bg-white dark:bg-slate-800 border-b dark:border-slate-700">
+                                <td className="px-6 py-4">{tr.date}</td>
+                                <td className="px-6 py-4">{getBranchName(tr.fromBranchId)}</td>
+                                <td className="px-6 py-4">{getBranchName(tr.toBranchId)}</td>
+                                <td className="px-6 py-4">{getSkuName(tr.skuId)}</td>
+                                <td className="px-6 py-4 font-bold">{tr.quantity}</td>
+                                <td className="px-6 py-4"><Badge color="green">{tr.status}</Badge></td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 
@@ -264,61 +465,84 @@ export default function OrderManager({
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-200 dark:border-slate-700">
-                <button
-                    className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === 'INVENTORY'
-                            ? 'border-sky-600 text-sky-600 dark:text-sky-400'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-                    }`}
-                    onClick={() => setActiveTab('INVENTORY')}
-                >
-                    在庫一覧 ({branchInventoryDisplay.length})
-                </button>
-                <button
-                    className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 ${
-                        activeTab === 'HISTORY'
-                            ? 'border-sky-600 text-sky-600 dark:text-sky-400'
-                            : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-                    }`}
-                    onClick={() => setActiveTab('HISTORY')}
-                >
-                    発注履歴 ({branchOrders.length})
-                </button>
+            <div className="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+                <button className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === 'INVENTORY' ? 'border-sky-600 text-sky-600 dark:text-sky-400' : 'border-transparent text-slate-500'}`} onClick={() => setActiveTab('INVENTORY')}>在庫一覧</button>
+                <button className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === 'HISTORY' ? 'border-sky-600 text-sky-600 dark:text-sky-400' : 'border-transparent text-slate-500'}`} onClick={() => setActiveTab('HISTORY')}>発注履歴</button>
+                <button className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === 'MESSAGES' ? 'border-sky-600 text-sky-600 dark:text-sky-400' : 'border-transparent text-slate-500'}`} onClick={() => setActiveTab('MESSAGES')}>メッセージ/報告</button>
+                <button className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === 'LOGISTICS' ? 'border-sky-600 text-sky-600 dark:text-sky-400' : 'border-transparent text-slate-500'}`} onClick={() => setActiveTab('LOGISTICS')}>配送/ドライバー</button>
+                <button className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap ${activeTab === 'TRANSFER' ? 'border-sky-600 text-sky-600 dark:text-sky-400' : 'border-transparent text-slate-500'}`} onClick={() => setActiveTab('TRANSFER')}>店舗間移動</button>
             </div>
 
             {/* Content */}
-            {activeTab === 'INVENTORY' ? renderInventoryTab() : renderOrdersTab()}
+            {activeTab === 'INVENTORY' && renderInventoryTab()}
+            {activeTab === 'HISTORY' && renderOrdersTab()}
+            {activeTab === 'MESSAGES' && renderMessagesTab()}
+            {activeTab === 'LOGISTICS' && renderLogisticsTab()}
+            {activeTab === 'TRANSFER' && renderTransferTab()}
 
-            {/* Order Modal */}
-            <Modal 
-                isOpen={isOrderModalOpen} 
-                onClose={() => setIsOrderModalOpen(false)} 
-                title="発注依頼"
-            >
+            {/* Modals */}
+            <Modal isOpen={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} title="発注依頼">
                 <div className="space-y-4">
-                    <div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-md mb-4">
-                        <p className="text-sm text-slate-500 dark:text-slate-400">対象商品</p>
-                        <p className="text-lg font-bold text-slate-800 dark:text-white">
-                            {selectedSkuForOrder ? getSkuName(selectedSkuForOrder) : ''}
-                        </p>
-                    </div>
-
-                    <Input 
-                        label="発注数量" 
-                        type="number" 
-                        min="1"
-                        value={orderQuantity}
-                        onChange={(e) => setOrderQuantity(parseInt(e.target.value) || 0)}
-                    />
-
-                    <p className="text-sm text-slate-500">
-                        ※ 発注は本部承認後に配送手配されます。通常2-3営業日で到着します。
-                    </p>
-
+                    <Input label="発注数量" type="number" min="1" value={orderQuantity} onChange={(e) => setOrderQuantity(parseInt(e.target.value) || 0)} />
                     <div className="flex justify-end gap-2 pt-4">
                         <Button variant="secondary" onClick={() => setIsOrderModalOpen(false)}>キャンセル</Button>
                         <Button onClick={handleSubmitOrder}>発注確定</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal isOpen={isDriverModalOpen} onClose={() => setIsDriverModalOpen(false)} title="新規ドライバー登録">
+                <div className="space-y-4">
+                    <Input label="氏名/会社名" value={newDriverName} onChange={(e) => setNewDriverName(e.target.value)} />
+                    <Input label="連絡先 (電話番号)" value={newDriverPhone} onChange={(e) => setNewDriverPhone(e.target.value)} />
+                    <div className="flex justify-end gap-2 pt-4">
+                        <Button variant="secondary" onClick={() => setIsDriverModalOpen(false)}>キャンセル</Button>
+                        <Button onClick={handleSubmitDriver}>登録</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal isOpen={isAssignModalOpen} onClose={() => setIsAssignModalOpen(false)} title="ドライバー手配">
+                <div className="space-y-4">
+                    <Select label="担当ドライバーを選択" value={selectedDriverId} onChange={(e) => setSelectedDriverId(e.target.value)}>
+                        <option value="">選択してください</option>
+                        {drivers.filter(d => d.status === 'AVAILABLE').map(d => (
+                            <option key={d.id} value={d.id}>{d.name} ({d.currentLocation})</option>
+                        ))}
+                    </Select>
+                     <div className="flex justify-end gap-2 pt-4">
+                        <Button variant="secondary" onClick={() => setIsAssignModalOpen(false)}>キャンセル</Button>
+                        <Button onClick={handleAssignDriverSubmit}>手配確定</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal isOpen={isTransferModalOpen} onClose={() => setIsTransferModalOpen(false)} title="在庫移動指示">
+                <div className="space-y-4">
+                    <div className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded mb-2">
+                        <span className="text-xs text-slate-500">移動元:</span>
+                        <div className="font-bold">{currentBranch?.name}</div>
+                    </div>
+                    
+                    <Select label="移動先店舗" value={transferTargetBranch} onChange={(e) => setTransferTargetBranch(e.target.value)}>
+                        <option value="">選択してください</option>
+                        {branches.filter(b => b.id !== currentBranchId).map(b => (
+                            <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                    </Select>
+                    
+                    <Select label="対象SKU" value={transferSkuId} onChange={(e) => setTransferSkuId(e.target.value)}>
+                        <option value="">選択してください</option>
+                        {skus.map(s => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                    </Select>
+                    
+                    <Input label="移動数量" type="number" min="1" value={transferQty} onChange={(e) => setTransferQty(parseInt(e.target.value) || 0)} />
+                    
+                    <div className="flex justify-end gap-2 pt-4">
+                        <Button variant="secondary" onClick={() => setIsTransferModalOpen(false)}>キャンセル</Button>
+                        <Button onClick={handleTransferSubmit}>移動指示</Button>
                     </div>
                 </div>
             </Modal>

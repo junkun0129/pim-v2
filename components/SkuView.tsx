@@ -19,15 +19,18 @@ interface SkuViewProps {
         attributes: Attribute[];
     };
     addSku: (sku: Omit<Sku, 'id'>) => void;
+    updateSku: (sku: Sku) => void;
     deleteSku: (id: string) => void;
     onViewSku: (skuId: string) => void;
     // New Prop for Import
     onImportSkus?: (skus: Omit<Sku, 'id'>[]) => void;
 }
 
-export default function SkuView({ skus, dataMap, addSku, deleteSku, onViewSku, onImportSkus }: SkuViewProps) {
+export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, onViewSku, onImportSkus }: SkuViewProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [editingSku, setEditingSku] = useState<Sku | undefined>(undefined);
+    
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [seriesFilter, setSeriesFilter] = useState('');
@@ -41,6 +44,24 @@ export default function SkuView({ skus, dataMap, addSku, deleteSku, onViewSku, o
             return (nameMatch || skuIdMatch) && categoryMatch && seriesMatch;
         });
     }, [skus, searchTerm, categoryFilter, seriesFilter]);
+
+    const handleOpenCreateModal = () => {
+        setEditingSku(undefined);
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEditModal = (sku: Sku) => {
+        setEditingSku(sku);
+        setIsModalOpen(true);
+    };
+
+    const handleSaveSku = (skuData: Omit<Sku, 'id'>) => {
+        if (editingSku) {
+            updateSku({ ...editingSku, ...skuData });
+        } else {
+            addSku(skuData);
+        }
+    };
 
     const handleExport = () => {
         // 1. Create CSV Header
@@ -88,7 +109,7 @@ export default function SkuView({ skus, dataMap, addSku, deleteSku, onViewSku, o
                     <Button variant="secondary" onClick={handleExport} className="flex-1 md:flex-none">
                         {ICONS.download} <span className="ml-2 hidden sm:inline">Export</span>
                     </Button>
-                    <Button onClick={() => setIsModalOpen(true)} className="flex-1 md:flex-none shadow-lg shadow-zinc-900/20">
+                    <Button onClick={handleOpenCreateModal} className="flex-1 md:flex-none shadow-lg shadow-zinc-900/20">
                         {ICONS.plus} <span className="ml-2">Add SKU</span>
                     </Button>
                 </div>
@@ -134,14 +155,21 @@ export default function SkuView({ skus, dataMap, addSku, deleteSku, onViewSku, o
                 </div>
             </Card>
 
-            <SkuTable skus={filteredSkus} dataMap={dataMap} onDelete={deleteSku} onViewSku={onViewSku}/>
+            <SkuTable 
+                skus={filteredSkus} 
+                dataMap={dataMap} 
+                onDelete={deleteSku} 
+                onViewSku={onViewSku} 
+                onEdit={handleOpenEditModal}
+            />
             
             {isModalOpen && (
                 <SkuModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
-                    onSave={addSku}
+                    onSave={handleSaveSku}
                     dataMap={dataMap}
+                    sku={editingSku}
                 />
             )}
 

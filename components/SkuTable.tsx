@@ -16,9 +16,10 @@ interface SkuTableProps {
     };
     onDelete: (id: string) => void;
     onViewSku: (skuId: string) => void;
+    onEdit: (sku: Sku) => void;
 }
 
-export default function SkuTable({ skus, dataMap, onDelete, onViewSku }: SkuTableProps) {
+export default function SkuTable({ skus, dataMap, onDelete, onViewSku, onEdit }: SkuTableProps) {
     const getSeriesName = (id?: string) => id ? dataMap.series.find(s => s.id === id)?.name : 'N/A';
     
     const getAttributeName = (id: string) => dataMap.attributes.find(a => a.id === id)?.name || '不明';
@@ -98,9 +99,14 @@ export default function SkuTable({ skus, dataMap, onDelete, onViewSku }: SkuTabl
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <Button onClick={() => onDelete(sku.id)} variant="danger" size="sm">
-                                            {ICONS.trash}
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                            <Button onClick={() => onEdit(sku)} variant="secondary" size="sm">
+                                                編集
+                                            </Button>
+                                            <Button onClick={() => onDelete(sku.id)} variant="danger" size="sm">
+                                                {ICONS.trash}
+                                            </Button>
+                                        </div>
                                     </td>
                                 </tr>
                             )})

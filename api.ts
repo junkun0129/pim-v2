@@ -62,6 +62,9 @@ export const api = {
     createSku: (data: Omit<Sku, 'id'>) => 
         fetch(`${BASE_URL}/skus`, { method: 'POST', headers, body: JSON.stringify(data) }).then(handleResponse),
     
+    updateSku: (data: Sku) => 
+        fetch(`${BASE_URL}/skus/${data.id}`, { method: 'PUT', headers, body: JSON.stringify(data) }).then(handleResponse),
+
     deleteSku: (id: string) => 
         fetch(`${BASE_URL}/skus/${id}`, { method: 'DELETE', headers }).then(handleResponse),
 
