@@ -17,9 +17,24 @@ interface SkuTableProps {
     onDelete: (id: string) => void;
     onViewSku: (skuId: string) => void;
     onEdit: (sku: Sku) => void;
+    // Selection Props
+    selectedIds?: Set<string>;
+    onToggleSelect?: (id: string) => void;
+    onToggleAll?: (checked: boolean) => void;
+    isAllSelected?: boolean;
 }
 
-export default function SkuTable({ skus, dataMap, onDelete, onViewSku, onEdit }: SkuTableProps) {
+export default function SkuTable({ 
+    skus, 
+    dataMap, 
+    onDelete, 
+    onViewSku, 
+    onEdit,
+    selectedIds,
+    onToggleSelect,
+    onToggleAll,
+    isAllSelected
+}: SkuTableProps) {
     const getSeriesName = (id?: string) => id ? dataMap.series.find(s => s.id === id)?.name : 'N/A';
     
     const getAttributeName = (id: string) => dataMap.attributes.find(a => a.id === id)?.name || '不明';
@@ -30,6 +45,20 @@ export default function SkuTable({ skus, dataMap, onDelete, onViewSku, onEdit }:
                 <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
                     <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
                         <tr>
+                            <th scope="col" className="p-4 w-4">
+                                {onToggleAll && (
+                                    <div className="flex items-center">
+                                        <input 
+                                            id="checkbox-all" 
+                                            type="checkbox" 
+                                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                            checked={isAllSelected || false}
+                                            onChange={(e) => onToggleAll(e.target.checked)}
+                                        />
+                                        <label htmlFor="checkbox-all" className="sr-only">checkbox</label>
+                                    </div>
+                                )}
+                            </th>
                             <th scope="col" className="px-6 py-3">画像</th>
                             <th scope="col" className="px-6 py-3">名前</th>
                             <th scope="col" className="px-6 py-3">SKU ID / JAN</th>
@@ -43,7 +72,7 @@ export default function SkuTable({ skus, dataMap, onDelete, onViewSku, onEdit }:
                     <tbody>
                         {skus.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className="text-center py-10 text-slate-500 dark:text-slate-400">
+                                <td colSpan={9} className="text-center py-10 text-slate-500 dark:text-slate-400">
                                     SKUが見つかりません。
                                 </td>
                             </tr>
@@ -56,9 +85,31 @@ export default function SkuTable({ skus, dataMap, onDelete, onViewSku, onEdit }:
                                 const allAttributeIds = attributeSource.attributeSetIds.flatMap(setId => 
                                     dataMap.attributeSets.find(as => as.id === setId)?.attributeIds || []
                                 );
+                                
+                                const isSelected = selectedIds?.has(sku.id);
 
                                 return (
-                                <tr key={sku.id} className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600">
+                                <tr 
+                                    key={sku.id} 
+                                    className={`
+                                        border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600
+                                        ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-slate-800'}
+                                    `}
+                                >
+                                    <td className="w-4 p-4">
+                                        {onToggleSelect && (
+                                            <div className="flex items-center">
+                                                <input 
+                                                    id={`checkbox-${sku.id}`} 
+                                                    type="checkbox" 
+                                                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                                    checked={isSelected || false}
+                                                    onChange={() => onToggleSelect(sku.id)}
+                                                />
+                                                <label htmlFor={`checkbox-${sku.id}`} className="sr-only">checkbox</label>
+                                            </div>
+                                        )}
+                                    </td>
                                     <td className="px-6 py-4">
                                         {imageUrl ? (
                                             <img src={imageUrl} alt={sku.name} className="w-12 h-12 object-cover rounded-md" />

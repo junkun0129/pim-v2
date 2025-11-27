@@ -102,7 +102,7 @@ export default function WebCatalogManager({ catalogs, skus, categories, series, 
              <div className="text-white py-4 px-6 shadow-md" style={{ backgroundColor: editColor }}>
                  <div className="container mx-auto flex justify-between items-center">
                     <h1 className="text-xl font-bold">{editName}</h1>
-                    <nav className="space-x-4 text-sm font-medium opacity-90">
+                    <nav className="space-x-4 text-sm font-medium opacity-90 hidden sm:block">
                         <span>Home</span>
                         <span>Products</span>
                         <span>Contact</span>
@@ -118,10 +118,10 @@ export default function WebCatalogManager({ catalogs, skus, categories, series, 
                              <div key={section.id} className="relative w-full h-80 md:h-96 overflow-hidden mb-12 rounded-b-xl shadow-lg">
                                  <img src={section.imageUrl} alt="Hero" className="w-full h-full object-cover" />
                                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-8 md:p-16">
-                                     <h2 className="text-4xl md:text-5xl font-bold text-white mb-2 drop-shadow-md">{section.title}</h2>
-                                     <p className="text-lg text-slate-200 drop-shadow-sm">{section.subtitle}</p>
+                                     <h2 className="text-3xl md:text-5xl font-bold text-white mb-2 drop-shadow-md">{section.title}</h2>
+                                     <p className="text-sm md:text-lg text-slate-200 drop-shadow-sm">{section.subtitle}</p>
                                      <button 
-                                        className="mt-6 px-6 py-3 rounded-full font-bold text-white w-max transition-transform hover:scale-105"
+                                        className="mt-6 px-6 py-3 rounded-full font-bold text-white w-max transition-transform hover:scale-105 text-sm md:text-base"
                                         style={{ backgroundColor: editColor }}
                                      >
                                          View Collection
@@ -143,16 +143,16 @@ export default function WebCatalogManager({ catalogs, skus, categories, series, 
                                                  <img src={sku.imageUrl || 'https://placehold.co/300x300'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={sku.name} />
                                              </div>
                                              <div className="p-4">
-                                                 <h4 className="font-bold text-slate-800 truncate">{sku.name}</h4>
-                                                 <p className="text-sm text-slate-500 mb-2">{sku.skuId}</p>
-                                                 <div className="flex justify-between items-center">
-                                                     <span className="font-bold" style={{ color: editColor }}>¥{sku.price?.toLocaleString()}</span>
-                                                     <button className="text-xs px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors">Add</button>
+                                                 <h4 className="font-bold text-slate-800 truncate text-sm md:text-base">{sku.name}</h4>
+                                                 <p className="text-xs text-slate-500 mb-2">{sku.skuId}</p>
+                                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                                                     <span className="font-bold text-sm" style={{ color: editColor }}>¥{sku.price?.toLocaleString()}</span>
+                                                     <button className="text-[10px] px-2 py-1 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors">Add</button>
                                                  </div>
                                              </div>
                                          </div>
                                      )) : (
-                                         <div className="col-span-4 text-center py-10 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                                         <div className="col-span-2 md:col-span-4 text-center py-10 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
                                              商品が見つかりません
                                          </div>
                                      )}
@@ -176,14 +176,14 @@ export default function WebCatalogManager({ catalogs, skus, categories, series, 
                                          </div>
                                      </div>
                                      <div className="w-full md:w-1/2 space-y-6">
-                                         <h3 className="text-3xl font-bold text-slate-800">{section.title || sku.name}</h3>
-                                         <p className="text-slate-600 leading-relaxed">
+                                         <h3 className="text-2xl md:text-3xl font-bold text-slate-800">{section.title || sku.name}</h3>
+                                         <p className="text-sm md:text-base text-slate-600 leading-relaxed">
                                              {sku.name}の魅力的な機能をご紹介します。最高品質の素材と最新のテクノロジーを融合させた、あなたの生活を豊かにする一品です。
                                          </p>
                                          <div className="grid grid-cols-2 gap-4">
                                              <div className="p-4 bg-white rounded-lg shadow-sm">
                                                  <p className="text-xs text-slate-400">SKU ID</p>
-                                                 <p className="font-mono font-bold">{sku.skuId}</p>
+                                                 <p className="font-mono font-bold text-sm">{sku.skuId}</p>
                                              </div>
                                              <div className="p-4 bg-white rounded-lg shadow-sm">
                                                  <p className="text-xs text-slate-400">価格</p>
@@ -209,7 +209,7 @@ export default function WebCatalogManager({ catalogs, skus, categories, series, 
              
              {/* Footer */}
              <div className="bg-zinc-900 text-slate-400 py-12 px-6 text-center mt-12">
-                 <p>&copy; 2023 {editName}. All rights reserved.</p>
+                 <p className="text-xs md:text-sm">&copy; 2023 {editName}. All rights reserved.</p>
              </div>
         </div>
     );
@@ -220,12 +220,12 @@ export default function WebCatalogManager({ catalogs, skus, categories, series, 
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+                        <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
                             {ICONS.book} Web Catalog
                         </h1>
                         <p className="text-slate-500 mt-1">プロモーション用の特設ページを作成・管理します</p>
                     </div>
-                    <Button onClick={handleCreateNew} className="shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700">
+                    <Button onClick={handleCreateNew} className="shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700 w-full md:w-auto">
                         {ICONS.plus} 新規カタログ作成
                     </Button>
                 </div>
@@ -288,9 +288,9 @@ export default function WebCatalogManager({ catalogs, skus, categories, series, 
             <div className="fixed inset-0 z-50 bg-white overflow-auto animate-fade-in">
                 <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 z-50">
                     <div className="flex items-center gap-4">
-                        <span className="text-sm font-bold text-slate-400">PREVIEW MODE</span>
-                        <div className="h-4 w-px bg-slate-300"></div>
-                        <span className="font-bold text-slate-800">{editName}</span>
+                        <span className="text-sm font-bold text-slate-400 hidden sm:inline">PREVIEW MODE</span>
+                        <div className="h-4 w-px bg-slate-300 hidden sm:block"></div>
+                        <span className="font-bold text-slate-800 truncate">{editName}</span>
                     </div>
                     <Button onClick={() => setViewMode('EDIT')}>
                         エディタに戻る
@@ -305,32 +305,34 @@ export default function WebCatalogManager({ catalogs, skus, categories, series, 
 
     // --- VIEW: EDITOR ---
     return (
-        <div className="h-full flex flex-col -m-6 md:-m-10"> {/* Negative margin to break out of main padding */}
+        <div className="h-full flex flex-col -m-4 md:-m-10">
             {/* Editor Header */}
-            <div className="h-16 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-6 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-4">
+            <div className="h-16 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 md:px-6 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2 md:gap-4">
                     <Button variant="ghost" size="sm" onClick={() => setViewMode('LIST')}>&larr; 一覧</Button>
-                    <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-700"></div>
-                    <span className="font-bold text-slate-800 dark:text-white">カタログエディタ</span>
+                    <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-700 hidden md:block"></div>
+                    <span className="font-bold text-slate-800 dark:text-white truncate max-w-[120px] md:max-w-none">カタログエディタ</span>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="secondary" onClick={() => setViewMode('PREVIEW')}>
+                <div className="flex items-center gap-2 md:gap-3">
+                    <Button variant="secondary" size="sm" onClick={() => setViewMode('PREVIEW')} className="hidden sm:flex">
                         プレビュー
                     </Button>
-                    <Button onClick={saveChanges} className="shadow-lg shadow-blue-500/20">
-                        保存する
+                    <Button onClick={saveChanges} size="sm" className="shadow-lg shadow-blue-500/20">
+                        保存
                     </Button>
                 </div>
             </div>
 
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
                 {/* Left Panel: Settings & Sections */}
-                <div className="w-80 bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col overflow-y-auto custom-scrollbar">
-                    <div className="p-6 border-b border-zinc-100 dark:border-zinc-800">
+                <div className="w-full md:w-80 bg-white dark:bg-zinc-900 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 flex flex-col overflow-y-auto custom-scrollbar h-[40%] md:h-full shrink-0">
+                    <div className="p-4 md:p-6 border-b border-zinc-100 dark:border-zinc-800">
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">基本設定</h3>
                         <div className="space-y-4">
                             <Input label="カタログ名" value={editName} onChange={(e) => setEditName(e.target.value)} />
-                            <Input label="説明" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+                            <div className="hidden md:block">
+                                <Input label="説明" value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+                            </div>
                             <div>
                                 <label className="block text-xs font-bold text-zinc-500 mb-1.5 uppercase tracking-wide">テーマカラー</label>
                                 <div className="flex items-center gap-2">
@@ -341,14 +343,14 @@ export default function WebCatalogManager({ catalogs, skus, categories, series, 
                         </div>
                     </div>
 
-                    <div className="p-6 flex-1">
+                    <div className="p-4 md:p-6 flex-1">
                         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">セクション構成</h3>
                         <div className="space-y-3 mb-6">
                             {editSections.map((section, index) => (
                                 <div key={section.id} className="bg-slate-50 dark:bg-zinc-800 rounded-lg p-3 border border-slate-200 dark:border-zinc-700 group">
                                     <div className="flex justify-between items-center mb-2">
                                         <Badge color="blue" className="text-[10px]">{section.type}</Badge>
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button onClick={() => moveSection(index, 'up')} disabled={index === 0} className="p-1 hover:bg-slate-200 rounded disabled:opacity-30">↑</button>
                                             <button onClick={() => moveSection(index, 'down')} disabled={index === editSections.length - 1} className="p-1 hover:bg-slate-200 rounded disabled:opacity-30">↓</button>
                                             <button onClick={() => removeSection(section.id)} className="p-1 hover:bg-red-100 text-red-500 rounded">×</button>
@@ -417,8 +419,8 @@ export default function WebCatalogManager({ catalogs, skus, categories, series, 
                 </div>
 
                 {/* Right Panel: Live Preview Canvas */}
-                <div className="flex-1 bg-slate-100 dark:bg-zinc-950 overflow-auto p-8 flex justify-center">
-                    <div className="w-full max-w-4xl bg-white shadow-2xl min-h-[800px] rounded-lg overflow-hidden ring-1 ring-slate-900/5 origin-top scale-90 md:scale-100 transition-transform">
+                <div className="flex-1 bg-slate-100 dark:bg-zinc-950 overflow-auto p-4 md:p-8 flex justify-center">
+                    <div className="w-full max-w-4xl bg-white shadow-2xl min-h-[400px] md:min-h-[800px] rounded-lg overflow-hidden ring-1 ring-slate-900/5 origin-top md:scale-100 transition-transform">
                         {renderPreviewContent()}
                     </div>
                 </div>
