@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { ViewType } from '../types';
 import { ICONS } from '../constants';
@@ -52,6 +53,7 @@ export default function Sidebar({ activeView, setActiveView }: SidebarProps) {
         { view: 'Orders', label: '在庫・発注', icon: ICONS.truck },
         { view: 'EC', label: 'ECストア', icon: ICONS.globe },
         { view: 'CREATIVE', label: 'POP作成', icon: ICONS.palette },
+        { view: 'CATALOG', label: 'Webカタログ', icon: ICONS.book },
     ];
 
     return (

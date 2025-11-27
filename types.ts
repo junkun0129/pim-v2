@@ -89,7 +89,7 @@ export interface CustomerOrder {
     status: 'PROCESSING' | 'SHIPPED' | 'DELIVERED';
 }
 
-export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'Orders' | 'EC' | 'CREATIVE';
+export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG';
 
 // --- Creative Studio Types ---
 
@@ -120,4 +120,27 @@ export interface PopTemplate {
     description: string;
     backgroundColor: string;
     elements: Omit<DesignElement, 'id'>[];
+}
+
+// --- Web Catalog Types ---
+
+export type CatalogSectionType = 'HERO' | 'GRID_CATEGORY' | 'SPOTLIGHT_SKU';
+
+export interface CatalogSection {
+    id: string;
+    type: CatalogSectionType;
+    title?: string;
+    subtitle?: string;
+    targetId?: string; // ID of Category or SKU depending on type
+    imageUrl?: string; // For Hero background
+}
+
+export interface WebCatalog {
+    id: string;
+    name: string;
+    description: string;
+    themeColor: string; // Hex code
+    sections: CatalogSection[];
+    status: 'DRAFT' | 'PUBLISHED';
+    lastUpdated: string;
 }

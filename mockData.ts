@@ -1,5 +1,5 @@
 
-import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate } from './types';
+import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate, WebCatalog } from './types';
 
 export const MOCK_CATEGORIES: Category[] = [
     { id: 'cat1', name: '日用品' },
@@ -127,6 +127,34 @@ export const MOCK_POP_TEMPLATES: PopTemplate[] = [
             { type: 'TEXT', x: 30, y: 80, width: 540, height: 50, fill: '#ffffff', fontSize: 40, fontWeight: 'bold', isSkuName: true },
             { type: 'TEXT', x: 350, y: 300, width: 200, height: 60, fill: '#fcd34d', fontSize: 64, fontWeight: 'bold', isSkuPrice: true },
              { type: 'IMAGE', x: 30, y: 160, width: 220, height: 220, fill: '#000', isSkuImage: true },
+        ]
+    }
+];
+
+export const MOCK_CATALOGS: WebCatalog[] = [
+    {
+        id: 'cat-web-1',
+        name: '新生活応援フェア',
+        description: '春の新生活に向けたおすすめ家電・日用品特集',
+        themeColor: '#10b981', // Emerald
+        status: 'PUBLISHED',
+        lastUpdated: '2023-11-01',
+        sections: [
+            { id: 'sec1', type: 'HERO', title: 'Start New Life', subtitle: '新しい生活、新しい道具と。', imageUrl: 'https://placehold.co/1200x400/10b981/ffffff?text=New+Life+Fair' },
+            { id: 'sec2', type: 'GRID_CATEGORY', title: '掃除道具コレクション', targetId: 'cat2' },
+            { id: 'sec3', type: 'SPOTLIGHT_SKU', title: '今月のピックアップ', targetId: 'sku1' },
+        ]
+    },
+    {
+        id: 'cat-web-2',
+        name: 'Apple製品特集',
+        description: '最新のiPhone, Macをご紹介',
+        themeColor: '#111827', // Gray-900
+        status: 'DRAFT',
+        lastUpdated: '2023-11-05',
+        sections: [
+            { id: 'sec1', type: 'HERO', title: 'Designed by Apple', subtitle: '革新的なテクノロジーをあなたの手に。', imageUrl: 'https://placehold.co/1200x400/111827/ffffff?text=Apple+Special' },
+            { id: 'sec2', type: 'GRID_CATEGORY', title: 'スマートフォン', targetId: 'cat5' },
         ]
     }
 ];

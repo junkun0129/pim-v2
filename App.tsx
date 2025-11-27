@@ -1,5 +1,6 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder } from './types';
+import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder, WebCatalog } from './types';
 import Sidebar from './components/Sidebar';
 import SkuView from './components/SkuView';
 import GenericManager from './components/GenericManager';
@@ -7,7 +8,8 @@ import SkuDetailView from './components/SkuDetailView';
 import OrderManager from './components/OrderManager';
 import EcService from './components/EcService';
 import CreativeStudio from './components/CreativeStudio';
-import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS } from './mockData';
+import WebCatalogManager from './components/WebCatalogManager';
+import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS, MOCK_CATALOGS } from './mockData';
 import { APP_CONFIG } from './config';
 import { api } from './api';
 import { ToastContainer, ToastMessage, ToastType } from './components/ui/Toast';
@@ -26,6 +28,9 @@ export default function App() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [customerOrders, setCustomerOrders] = useState<CustomerOrder[]>([]);
     const [currentBranchId, setCurrentBranchId] = useState<string>('br1');
+
+    // New Web Catalog State
+    const [catalogs, setCatalogs] = useState<WebCatalog[]>([]);
 
     const [activeView, setActiveView] = useState<ViewType>('SKUs');
     const [selectedSkuId, setSelectedSkuId] = useState<string | null>(null);
@@ -54,6 +59,7 @@ export default function App() {
             setInventory(MOCK_INVENTORY);
             setOrders(MOCK_ORDERS);
             setCustomerOrders(MOCK_CUSTOMER_ORDERS);
+            setCatalogs(MOCK_CATALOGS);
 
             if (APP_CONFIG.useMockData) {
                 setSkus(MOCK_SKUS);
@@ -321,6 +327,26 @@ export default function App() {
         addToast('success', 'デザインを保存しました');
     };
 
+    // --- Web Catalog Actions ---
+    const handleSaveCatalog = (catalog: WebCatalog) => {
+        // If it exists, update; otherwise add
+        const exists = catalogs.some(c => c.id === catalog.id);
+        if (exists) {
+            setCatalogs(prev => prev.map(c => c.id === catalog.id ? catalog : c));
+            addToast('success', 'カタログを更新しました');
+        } else {
+            setCatalogs(prev => [...prev, catalog]);
+            addToast('success', '新規カタログを作成しました');
+        }
+    };
+
+    const handleDeleteCatalog = (id: string) => {
+        if(window.confirm('このカタログを削除しますか？')) {
+            setCatalogs(prev => prev.filter(c => c.id !== id));
+            addToast('success', 'カタログを削除しました');
+        }
+    };
+
     const handleViewSku = (skuId: string) => {
         setSelectedSkuId(skuId);
         setActiveView('SKU_DETAIL');
@@ -405,6 +431,17 @@ export default function App() {
                         skus={skus}
                         branches={branches}
                         onSaveAsset={handleSaveAsset}
+                    />
+                );
+            case 'CATALOG':
+                return (
+                    <WebCatalogManager
+                        catalogs={catalogs}
+                        skus={skus}
+                        categories={categories}
+                        series={series}
+                        onSaveCatalog={handleSaveCatalog}
+                        onDeleteCatalog={handleDeleteCatalog}
                     />
                 );
             default:
