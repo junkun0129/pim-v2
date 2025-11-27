@@ -1,5 +1,5 @@
 
-import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate, WebCatalog } from './types';
+import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate, WebCatalog, User, Project, ChatMessage, BrainstormIdea } from './types';
 
 export const MOCK_CATEGORIES: Category[] = [
     { id: 'cat1', name: '日用品' },
@@ -157,4 +157,45 @@ export const MOCK_CATALOGS: WebCatalog[] = [
             { id: 'sec2', type: 'GRID_CATEGORY', title: 'スマートフォン', targetId: 'cat5' },
         ]
     }
+];
+
+// --- Project / Collaboration Mock Data ---
+
+export const MOCK_USERS: User[] = [
+    { id: 'user1', name: '自分 (PM)', avatarUrl: 'https://placehold.co/100/3b82f6/ffffff?text=ME' },
+    { id: 'user2', name: '田中 健', avatarUrl: 'https://placehold.co/100/10b981/ffffff?text=TK' },
+    { id: 'user3', name: '佐藤 愛', avatarUrl: 'https://placehold.co/100/f59e0b/ffffff?text=AS' },
+];
+
+export const MOCK_PROJECTS: Project[] = [
+    {
+        id: 'proj1',
+        name: '2024 春の新製品開発',
+        description: '来春リリース予定のサステナブル掃除用品シリーズの企画・開発',
+        status: 'IN_PROGRESS',
+        memberIds: ['user1', 'user2', 'user3'],
+        createdAt: '2023-11-01',
+        dueDate: '2024-02-28'
+    },
+    {
+        id: 'proj2',
+        name: '家電ラインナップ刷新',
+        description: '既存の白物家電のリブランディング',
+        status: 'PLANNING',
+        memberIds: ['user1', 'user2'],
+        createdAt: '2023-11-10'
+    }
+];
+
+export const MOCK_CHAT_MESSAGES: ChatMessage[] = [
+    { id: 'msg1', projectId: 'proj1', userId: 'user2', content: '新しいスポンジの素材についてアイデアがあります！', timestamp: '2023-11-12 10:00' },
+    { id: 'msg2', projectId: 'proj1', userId: 'user1', content: 'お、いいですね。ブレストボードに貼っておいてください。', timestamp: '2023-11-12 10:05' },
+    { id: 'msg3', projectId: 'proj1', userId: 'user3', content: 'パッケージデザインのラフもできたので共有します。', timestamp: '2023-11-12 11:30' },
+];
+
+export const MOCK_IDEAS: BrainstormIdea[] = [
+    { id: 'idea1', projectId: 'proj1', userId: 'user2', content: '竹繊維を使った生分解性スポンジ', color: 'green', votes: 2 },
+    { id: 'idea2', projectId: 'proj1', userId: 'user3', content: '詰め替え可能なボトルデザイン', color: 'blue', votes: 1 },
+    { id: 'idea3', projectId: 'proj1', userId: 'user1', content: 'お試しセット（3種入り）', color: 'yellow', votes: 3 },
+    { id: 'idea4', projectId: 'proj1', userId: 'user2', content: 'サブスクリプション販売モデル', color: 'pink', votes: 0 },
 ];

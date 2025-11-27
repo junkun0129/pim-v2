@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder, WebCatalog } from './types';
+import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder, WebCatalog, Project } from './types';
 import Sidebar from './components/Sidebar';
 import SkuView from './components/SkuView';
 import GenericManager from './components/GenericManager';
@@ -9,7 +9,8 @@ import OrderManager from './components/OrderManager';
 import EcService from './components/EcService';
 import CreativeStudio from './components/CreativeStudio';
 import WebCatalogManager from './components/WebCatalogManager';
-import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS, MOCK_CATALOGS } from './mockData';
+import ProjectManager from './components/ProjectManager';
+import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS, MOCK_CATALOGS, MOCK_PROJECTS } from './mockData';
 import { APP_CONFIG } from './config';
 import { api } from './api';
 import { ToastContainer, ToastMessage, ToastType } from './components/ui/Toast';
@@ -31,6 +32,10 @@ export default function App() {
 
     // New Web Catalog State
     const [catalogs, setCatalogs] = useState<WebCatalog[]>([]);
+
+    // New Project State
+    const [projects, setProjects] = useState<Project[]>([]);
+    const CURRENT_USER_ID = 'user1'; // Mock logged-in user
 
     const [activeView, setActiveView] = useState<ViewType>('SKUs');
     const [selectedSkuId, setSelectedSkuId] = useState<string | null>(null);
@@ -60,6 +65,7 @@ export default function App() {
             setOrders(MOCK_ORDERS);
             setCustomerOrders(MOCK_CUSTOMER_ORDERS);
             setCatalogs(MOCK_CATALOGS);
+            setProjects(MOCK_PROJECTS);
 
             if (APP_CONFIG.useMockData) {
                 setSkus(MOCK_SKUS);
@@ -369,6 +375,18 @@ export default function App() {
         }
     };
 
+    // --- Project Actions ---
+    const handleCreateProject = (project: Omit<Project, 'id' | 'createdAt' | 'status'>) => {
+        const newProject: Project = {
+            id: `proj-${Date.now()}`,
+            ...project,
+            status: 'PLANNING',
+            createdAt: new Date().toISOString()
+        };
+        setProjects(prev => [...prev, newProject]);
+        addToast('success', '新規プロジェクトを作成しました');
+    };
+
     const handleViewSku = (skuId: string) => {
         setSelectedSkuId(skuId);
         setActiveView('SKU_DETAIL');
@@ -466,6 +484,14 @@ export default function App() {
                         onDeleteCatalog={handleDeleteCatalog}
                     />
                 );
+            case 'PROJECTS':
+                return (
+                    <ProjectManager
+                        projects={projects}
+                        onCreateProject={handleCreateProject}
+                        currentUserId={CURRENT_USER_ID}
+                    />
+                )
             default:
                 return <SkuView skus={skus} dataMap={dataMap} addSku={addSku} deleteSku={deleteSku} onViewSku={handleViewSku} />;
         }

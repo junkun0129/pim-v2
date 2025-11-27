@@ -89,7 +89,7 @@ export interface CustomerOrder {
     status: 'PROCESSING' | 'SHIPPED' | 'DELIVERED';
 }
 
-export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG';
+export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG' | 'PROJECTS';
 
 // --- Creative Studio Types ---
 
@@ -143,4 +143,39 @@ export interface WebCatalog {
     sections: CatalogSection[];
     status: 'DRAFT' | 'PUBLISHED';
     lastUpdated: string;
+}
+
+// --- Project / Collaboration Types ---
+
+export interface User {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+}
+
+export interface Project {
+    id: string;
+    name: string;
+    description: string;
+    status: 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED';
+    memberIds: string[];
+    createdAt: string;
+    dueDate?: string;
+}
+
+export interface ChatMessage {
+    id: string;
+    projectId: string;
+    userId: string;
+    content: string;
+    timestamp: string;
+}
+
+export interface BrainstormIdea {
+    id: string;
+    projectId: string;
+    userId: string;
+    content: string;
+    color: 'yellow' | 'pink' | 'blue' | 'green';
+    votes: number; // simple like count
 }

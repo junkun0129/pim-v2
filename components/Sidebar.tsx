@@ -74,6 +74,7 @@ export default function Sidebar({ activeView, setActiveView }: SidebarProps) {
         { view: 'EC', label: 'ECストア', icon: ICONS.globe },
         { view: 'CREATIVE', label: 'POP作成', icon: ICONS.palette },
         { view: 'CATALOG', label: 'Webカタログ', icon: ICONS.book },
+        { view: 'PROJECTS', label: '企画プロジェクト', icon: ICONS.users },
     ];
 
     return (
