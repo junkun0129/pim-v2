@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import type { Sku, Series, Category, AttributeSet, Attribute } from '../types';
 import SkuTable from './SkuTable';
 import SkuModal from './modals/SkuModal';
+import ImportModal from './modals/ImportModal';
 import Button from './ui/Button';
 import { ICONS } from '../constants';
 import Card from './ui/Card';
@@ -20,10 +21,13 @@ interface SkuViewProps {
     addSku: (sku: Omit<Sku, 'id'>) => void;
     deleteSku: (id: string) => void;
     onViewSku: (skuId: string) => void;
+    // New Prop for Import
+    onImportSkus?: (skus: Omit<Sku, 'id'>[]) => void;
 }
 
-export default function SkuView({ skus, dataMap, addSku, deleteSku, onViewSku }: SkuViewProps) {
+export default function SkuView({ skus, dataMap, addSku, deleteSku, onViewSku, onImportSkus }: SkuViewProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [seriesFilter, setSeriesFilter] = useState('');
@@ -38,14 +42,56 @@ export default function SkuView({ skus, dataMap, addSku, deleteSku, onViewSku }:
         });
     }, [skus, searchTerm, categoryFilter, seriesFilter]);
 
+    const handleExport = () => {
+        // 1. Create CSV Header
+        const headers = ['id', 'name', 'skuId', 'barcode', 'price', 'imageUrl'];
+        
+        // 2. Create CSV Rows
+        const rows = filteredSkus.map(sku => {
+            return [
+                sku.id,
+                `"${sku.name.replace(/"/g, '""')}"`, // Escape quotes
+                sku.skuId,
+                sku.barcode || '',
+                sku.price || 0,
+                sku.imageUrl || ''
+            ].join(',');
+        });
+
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        
+        // 3. Trigger Download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `skus_export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleImport = (newSkus: Omit<Sku, 'id'>[]) => {
+        if (onImportSkus) {
+            onImportSkus(newSkus);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <h1 className="text-3xl font-bold text-zinc-800 dark:text-white font-['Plus_Jakarta_Sans']">SKU Management</h1>
-                <Button onClick={() => setIsModalOpen(true)} className="w-full md:w-auto shadow-lg shadow-zinc-900/20">
-                    {ICONS.plus}
-                    新規SKUを追加
-                </Button>
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    <Button variant="secondary" onClick={() => setIsImportModalOpen(true)} className="flex-1 md:flex-none">
+                        {ICONS.upload} <span className="ml-2 hidden sm:inline">Import</span>
+                    </Button>
+                    <Button variant="secondary" onClick={handleExport} className="flex-1 md:flex-none">
+                        {ICONS.download} <span className="ml-2 hidden sm:inline">Export</span>
+                    </Button>
+                    <Button onClick={() => setIsModalOpen(true)} className="flex-1 md:flex-none shadow-lg shadow-zinc-900/20">
+                        {ICONS.plus} <span className="ml-2">Add SKU</span>
+                    </Button>
+                </div>
             </div>
 
             <Card className="border-0 shadow-lg dark:shadow-none dark:border dark:border-zinc-800">
@@ -96,6 +142,14 @@ export default function SkuView({ skus, dataMap, addSku, deleteSku, onViewSku }:
                     onClose={() => setIsModalOpen(false)}
                     onSave={addSku}
                     dataMap={dataMap}
+                />
+            )}
+
+            {isImportModalOpen && (
+                <ImportModal
+                    isOpen={isImportModalOpen}
+                    onClose={() => setIsImportModalOpen(false)}
+                    onImport={handleImport}
                 />
             )}
         </div>

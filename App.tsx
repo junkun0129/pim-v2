@@ -126,6 +126,28 @@ export default function App() {
         }, 'SKUを追加しました');
     };
     
+    // Batch Import Logic
+    const importSkus = async (newSkus: Omit<Sku, 'id'>[]) => {
+        await wrapMutation(async () => {
+            if (APP_CONFIG.useMockData) {
+                const skusWithIds = newSkus.map((sku, index) => ({
+                    ...sku,
+                    id: `sku-imp-${Date.now()}-${index}`
+                }));
+                setSkus(prev => [...prev, ...skusWithIds]);
+            } else {
+                // Real backend would ideally have a bulk create endpoint
+                // For now, we will loop sequentially (not efficient, but works for demo)
+                for (const sku of newSkus) {
+                    await api.createSku(sku);
+                }
+                // Refresh data
+                const data = await api.fetchAllData();
+                setSkus(data.skus || []);
+            }
+        }, `${newSkus.length}件のSKUをインポートしました`);
+    };
+
     const addSeries = async (item: Omit<Series, 'id'|'childSkuIds'>) => {
         await wrapMutation(async () => {
             let newSeries: Series;
@@ -384,7 +406,7 @@ export default function App() {
 
         switch (activeView) {
             case 'SKUs':
-                return <SkuView skus={skus} dataMap={dataMap} addSku={addSku} deleteSku={deleteSku} onViewSku={handleViewSku} />;
+                return <SkuView skus={skus} dataMap={dataMap} addSku={addSku} deleteSku={deleteSku} onViewSku={handleViewSku} onImportSkus={importSkus} />;
             case 'SKU_DETAIL': {
                 const selectedSku = skus.find(s => s.id === selectedSkuId);
                 if (!selectedSku) {

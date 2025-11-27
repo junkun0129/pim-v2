@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { ViewType } from '../types';
 import { ICONS } from '../constants';
 
@@ -39,6 +39,26 @@ const NavItem: React.FC<{
 
 export default function Sidebar({ activeView, setActiveView }: SidebarProps) {
     const [isCollapsed, setIsCollapsed] = useState(false);
+    
+    // Scroll state
+    const navRef = useRef<HTMLElement>(null);
+    const [canScrollUp, setCanScrollUp] = useState(false);
+    const [canScrollDown, setCanScrollDown] = useState(false);
+
+    const checkScroll = () => {
+        if (navRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = navRef.current;
+            setCanScrollUp(scrollTop > 0);
+            // Allow a small buffer (1px) for sub-pixel rendering differences
+            setCanScrollDown(scrollTop + clientHeight < scrollHeight - 1);
+        }
+    };
+
+    useEffect(() => {
+        checkScroll();
+        window.addEventListener('resize', checkScroll);
+        return () => window.removeEventListener('resize', checkScroll);
+    }, [activeView]); // Re-check when view likely changes content height
 
     const navItems: { view: ViewType; label: string; icon: React.ReactNode }[] = [
         { view: 'SKUs', label: 'SKU管理', icon: ICONS.dashboard },
@@ -69,47 +89,69 @@ export default function Sidebar({ activeView, setActiveView }: SidebarProps) {
                 )}
             </div>
 
-            <nav className="flex-1 px-3 py-6 space-y-6 overflow-y-auto custom-scrollbar overflow-x-hidden">
-                <div>
-                    {!isCollapsed && (
-                        <div className="px-3 mb-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap">
-                            Master Data
-                        </div>
-                    )}
-                    {navItems.map((item) => (
-                        <NavItem
-                            key={item.view}
-                            icon={item.icon}
-                            label={item.label}
-                            view={item.view}
-                            isActive={activeView === item.view}
-                            isCollapsed={isCollapsed}
-                            onClick={() => setActiveView(item.view)}
-                        />
-                    ))}
-                </div>
+            <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
+                {/* Top Fade Indicator */}
+                <div 
+                    className={`absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-zinc-900 to-transparent z-10 pointer-events-none transition-opacity duration-300 ${canScrollUp ? 'opacity-100' : 'opacity-0'}`} 
+                />
 
-                <div>
-                    {!isCollapsed && (
-                        <div className="px-3 mb-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap">
-                            Retail & Operations
-                        </div>
-                    )}
-                    {omsNavItems.map((item) => (
-                        <NavItem
-                            key={item.view}
-                            icon={item.icon}
-                            label={item.label}
-                            view={item.view}
-                            isActive={activeView === item.view}
-                            isCollapsed={isCollapsed}
-                            onClick={() => setActiveView(item.view)}
-                        />
-                    ))}
-                </div>
-            </nav>
+                <nav 
+                    ref={navRef}
+                    onScroll={checkScroll}
+                    className="flex-1 px-3 py-6 space-y-6 overflow-y-auto custom-scrollbar overflow-x-hidden scroll-smooth"
+                >
+                    <div>
+                        {!isCollapsed && (
+                            <div className="px-3 mb-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap">
+                                Master Data
+                            </div>
+                        )}
+                        {navItems.map((item) => (
+                            <NavItem
+                                key={item.view}
+                                icon={item.icon}
+                                label={item.label}
+                                view={item.view}
+                                isActive={activeView === item.view}
+                                isCollapsed={isCollapsed}
+                                onClick={() => setActiveView(item.view)}
+                            />
+                        ))}
+                    </div>
 
-            <div className="p-4 border-t border-zinc-800">
+                    <div>
+                        {!isCollapsed && (
+                            <div className="px-3 mb-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap">
+                                Retail & Operations
+                            </div>
+                        )}
+                        {omsNavItems.map((item) => (
+                            <NavItem
+                                key={item.view}
+                                icon={item.icon}
+                                label={item.label}
+                                view={item.view}
+                                isActive={activeView === item.view}
+                                isCollapsed={isCollapsed}
+                                onClick={() => setActiveView(item.view)}
+                            />
+                        ))}
+                    </div>
+                    {/* Extra padding at bottom to ensure last item is not hidden by gradient */}
+                    <div className="h-6"></div>
+                </nav>
+
+                {/* Bottom Fade Indicator & More Arrow */}
+                <div 
+                    className={`absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-zinc-900 via-zinc-900/80 to-transparent z-10 pointer-events-none transition-opacity duration-300 flex items-end justify-center pb-1 ${canScrollDown ? 'opacity-100' : 'opacity-0'}`} 
+                >
+                    <div className="animate-bounce bg-zinc-800 rounded-full p-1 shadow-lg border border-zinc-700">
+                        <svg className="w-3 h-3 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-4 border-t border-zinc-800 z-20 bg-zinc-900">
                 <button 
                     onClick={() => setIsCollapsed(!isCollapsed)}
                     className="w-full flex items-center justify-center p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
