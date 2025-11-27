@@ -118,7 +118,7 @@ export interface StockTransfer {
     date: string;
 }
 
-export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG' | 'PROJECTS';
+export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG' | 'PROJECTS' | 'ADMIN';
 
 // --- Creative Studio Types ---
 
@@ -180,6 +180,7 @@ export interface User {
     id: string;
     name: string;
     avatarUrl?: string;
+    roleId: string; // Link to Role
 }
 
 export interface Project {
@@ -207,4 +208,21 @@ export interface BrainstormIdea {
     content: string;
     color: 'yellow' | 'pink' | 'blue' | 'green';
     votes: number; // simple like count
+}
+
+// --- RBAC (Role Based Access Control) ---
+
+export type Permission = 
+    | 'ACCESS_SKU'      // Master Data (SKU, Series, Categories)
+    | 'ACCESS_OMS'      // Orders, Inventory, Logistics
+    | 'ACCESS_EC'       // EC Store management
+    | 'ACCESS_CATALOG'  // Web Catalog
+    | 'ACCESS_PROJECT'  // Projects & Chat
+    | 'ACCESS_ADMIN';   // User & Role Management
+
+export interface Role {
+    id: string;
+    name: string;
+    permissions: Permission[];
+    description?: string;
 }

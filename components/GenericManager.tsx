@@ -72,22 +72,14 @@ const SeriesModal: React.FC<{
         return Array.from(attrIds).map(id => dataMap.attributes.find(a => a.id === id)).filter(Boolean) as Attribute[];
     }, [attributeSetIds, dataMap.attributeSets, dataMap.attributes]);
 
-    // Ensure attribute values keys exist when sets change, but preserve existing values
     useEffect(() => {
         const newValues: Record<string, string> = { ...attributeValues };
-        // relevantAttributes.forEach(attr => {
-        //     if (newValues[attr.id] === undefined) {
-        //         newValues[attr.id] = '';
-        //     }
-        // });
-        // setAttributeValues(newValues);
     }, [relevantAttributes]);
 
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             
-             // Mock mode fallback
              if (APP_CONFIG.useMockData) {
                 const reader = new FileReader();
                 reader.onloadend = () => {
@@ -97,7 +89,6 @@ const SeriesModal: React.FC<{
                 return;
             }
 
-            // Real API Upload
             setIsUploading(true);
             try {
                 const url = await api.uploadImage(file);
@@ -269,6 +260,11 @@ const CategoryNode: React.FC<{
 };
 
 
+interface AttributeFilter {
+    attributeId: string;
+    value: string;
+}
+
 export default function GenericManager({ title, items, onAdd, onDelete, onUpdateAttributeSet, onUpdateSeries, dataMap }: GenericManagerProps) {
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [newItemName, setNewItemName] = useState('');
@@ -276,6 +272,14 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
     const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
     const [editingSet, setEditingSet] = useState<AttributeSet | null>(null);
     const [editingSeries, setEditingSeries] = useState<Series | undefined>(undefined);
+    
+    // Filter State for Series
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('');
+    const [attributeFilters, setAttributeFilters] = useState<AttributeFilter[]>([]);
+    const [targetAttrId, setTargetAttrId] = useState('');
+    const [targetAttrValue, setTargetAttrValue] = useState('');
 
     const handleSaveItem = () => {
         if (newItemName.trim()) {
@@ -315,6 +319,20 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
         }
         setIsAttributeModalOpen(false);
         setEditingSet(null);
+    };
+
+    const handleAddAttributeFilter = () => {
+        if (targetAttrId && targetAttrValue) {
+            if (!attributeFilters.some(f => f.attributeId === targetAttrId && f.value === targetAttrValue)) {
+                setAttributeFilters(prev => [...prev, { attributeId: targetAttrId, value: targetAttrValue }]);
+            }
+            setTargetAttrValue('');
+            setTargetAttrId('');
+        }
+    };
+
+    const handleRemoveAttributeFilter = (index: number) => {
+        setAttributeFilters(prev => prev.filter((_, i) => i !== index));
     };
     
     const singularTitle = title === 'シリーズ' ? 'シリーズ' : (title.endsWith('s') ? title.slice(0, -1) : title);
@@ -379,64 +397,213 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
     );
     
     const renderSeries = () => {
-        const seriesItems = items as Series[];
+        let seriesItems = items as Series[];
+
+        // Filter Logic for Series
+        seriesItems = seriesItems.filter(series => {
+            const nameMatch = series.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const categoryMatch = categoryFilter ? series.categoryIds.includes(categoryFilter) : true;
+            
+            if (!nameMatch || !categoryMatch) return false;
+
+            if (attributeFilters.length > 0) {
+                const matchesAttributes = attributeFilters.every(filter => {
+                    const val = series.attributeValues[filter.attributeId] || '';
+                    return val.toLowerCase().includes(filter.value.toLowerCase());
+                });
+                if (!matchesAttributes) return false;
+            }
+            return true;
+        });
+
+        const activeFilterCount = (categoryFilter ? 1 : 0) + attributeFilters.length;
+
         return(
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
-             <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
-                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
-                        <tr>
-                            <th scope="col" className="px-6 py-3">画像</th>
-                            <th scope="col" className="px-6 py-3">名前</th>
-                            <th scope="col" className="px-6 py-3">カテゴリ</th>
-                            <th scope="col" className="px-6 py-3">属性値</th>
-                            <th scope="col" className="px-6 py-3">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {seriesItems.map(series => {
-                           const allAttributeIds = series.attributeSetIds.flatMap(setId => 
-                                dataMap?.attributeSets.find(as => as.id === setId)?.attributeIds || []
-                            );
-                            return (
-                                <tr key={series.id} className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600">
-                                    <td className="px-6 py-4">
-                                        {series.imageUrl ? (
-                                            <img src={series.imageUrl} alt={series.name} className="w-12 h-12 object-cover rounded-md" />
-                                        ) : (
-                                            <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-md flex items-center justify-center text-slate-400">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{series.name}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-wrap gap-1">
-                                            {series.categoryIds.map(id => <Badge key={id}>{getCategoryPath(id, dataMap?.categories || [])}</Badge>)}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-wrap gap-1">
-                                            {allAttributeIds.map(attrId => (
-                                                <Badge key={attrId} color="green">
-                                                    {dataMap?.attributes.find(a => a.id === attrId)?.name}: {series.attributeValues[attrId] || 'N/A'}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <Button onClick={() => openSeriesEdit(series)} variant="secondary" size="sm">編集</Button>
-                                            <Button onClick={() => onDelete(series.id)} variant="danger" size="sm">{ICONS.trash}</Button>
-                                        </div>
-                                    </td>
+            <div className="space-y-4">
+                 {/* Compact Search & Filter Bar */}
+                 <div className="bg-white dark:bg-zinc-900 p-2 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row gap-2">
+                    <div className="relative flex-grow">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400">
+                            {ICONS.search}
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="シリーズ名で検索..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-transparent border-none text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:ring-0"
+                        />
+                    </div>
+                    <Button 
+                        variant="secondary" 
+                        onClick={() => setIsFilterModalOpen(true)}
+                        className={`shrink-0 ${activeFilterCount > 0 ? 'bg-sky-50 border-sky-200 text-sky-700 dark:bg-sky-900/20 dark:border-sky-800 dark:text-sky-300' : ''}`}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                        Filters
+                        {activeFilterCount > 0 && (
+                            <span className="ml-2 bg-sky-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                {activeFilterCount}
+                            </span>
+                        )}
+                    </Button>
+                </div>
+
+                {/* Active Filter Chips */}
+                {activeFilterCount > 0 && (
+                    <div className="flex flex-wrap gap-2 items-center px-1">
+                        <span className="text-xs font-bold text-zinc-400 uppercase mr-2">Active Filters:</span>
+                        
+                        {categoryFilter && (
+                             <Badge color="blue" className="flex items-center gap-1 pr-1">
+                                カテゴリ: {getCategoryPath(categoryFilter, dataMap?.categories || []).split('>').pop()}
+                                <button onClick={() => setCategoryFilter('')} className="p-0.5 hover:bg-blue-200 rounded-full"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                            </Badge>
+                        )}
+
+                        {attributeFilters.map((filter, index) => (
+                            <Badge key={index} color="green" className="flex items-center gap-1 pr-1">
+                                {dataMap?.attributes.find(a => a.id === filter.attributeId)?.name}: {filter.value}
+                                <button onClick={() => handleRemoveAttributeFilter(index)} className="p-0.5 hover:bg-emerald-200 rounded-full"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                            </Badge>
+                        ))}
+
+                        <button 
+                            onClick={() => {
+                                setCategoryFilter('');
+                                setAttributeFilters([]);
+                            }}
+                            className="text-xs text-red-500 hover:text-red-700 hover:underline ml-2"
+                        >
+                            Clear All
+                        </button>
+                    </div>
+                )}
+
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                            <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                                <tr>
+                                    <th scope="col" className="px-6 py-3">画像</th>
+                                    <th scope="col" className="px-6 py-3">名前</th>
+                                    <th scope="col" className="px-6 py-3">カテゴリ</th>
+                                    <th scope="col" className="px-6 py-3">属性値</th>
+                                    <th scope="col" className="px-6 py-3">操作</th>
                                 </tr>
-                            )
-                        })}
-                    </tbody>
-                </table>
-             </div>
-        </div>
+                            </thead>
+                            <tbody>
+                                {seriesItems.length === 0 ? (
+                                    <tr><td colSpan={5} className="px-6 py-8 text-center">条件に一致するシリーズはありません</td></tr>
+                                ) : (
+                                    seriesItems.map(series => {
+                                    const allAttributeIds = series.attributeSetIds.flatMap(setId => 
+                                            dataMap?.attributeSets.find(as => as.id === setId)?.attributeIds || []
+                                        );
+                                        return (
+                                            <tr key={series.id} className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600">
+                                                <td className="px-6 py-4">
+                                                    {series.imageUrl ? (
+                                                        <img src={series.imageUrl} alt={series.name} className="w-12 h-12 object-cover rounded-md" />
+                                                    ) : (
+                                                        <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-md flex items-center justify-center text-slate-400">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{series.name}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {series.categoryIds.map(id => <Badge key={id}>{getCategoryPath(id, dataMap?.categories || [])}</Badge>)}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {allAttributeIds.map(attrId => (
+                                                            <Badge key={attrId} color="green">
+                                                                {dataMap?.attributes.find(a => a.id === attrId)?.name}: {series.attributeValues[attrId] || 'N/A'}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <Button onClick={() => openSeriesEdit(series)} variant="secondary" size="sm">編集</Button>
+                                                        <Button onClick={() => onDelete(series.id)} variant="danger" size="sm">{ICONS.trash}</Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Filter Modal for Series */}
+                <Modal isOpen={isFilterModalOpen} onClose={() => setIsFilterModalOpen(false)} title="詳細検索・絞り込み">
+                    <div className="space-y-6">
+                        {/* Basic Filters */}
+                        <div className="space-y-4">
+                             <Select 
+                                label="カテゴリ"
+                                value={categoryFilter}
+                                onChange={(e) => setCategoryFilter(e.target.value)}
+                            >
+                                <option value="">すべてのカテゴリ</option>
+                                {dataMap?.categories.map(c => <option key={c.id} value={c.id}>{getCategoryPath(c.id, dataMap.categories)}</option>)}
+                            </Select>
+                        </div>
+
+                        <div className="border-t border-zinc-100 dark:border-zinc-800 my-4"></div>
+
+                        {/* Attribute Filters */}
+                        <div>
+                            <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wide">属性フィルタ追加</label>
+                            <div className="space-y-3 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800">
+                                 <Select 
+                                    value={targetAttrId}
+                                    onChange={(e) => setTargetAttrId(e.target.value)}
+                                >
+                                    <option value="">属性を選択...</option>
+                                    {dataMap?.attributes.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                </Select>
+                                <input 
+                                    type="text"
+                                    value={targetAttrValue}
+                                    onChange={(e) => setTargetAttrValue(e.target.value)}
+                                    placeholder="値を入力"
+                                    className="w-full px-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm focus:outline-none focus:border-zinc-800"
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAddAttributeFilter()}
+                                />
+                                <Button onClick={handleAddAttributeFilter} disabled={!targetAttrId || !targetAttrValue} variant="secondary" className="w-full">
+                                    条件リストに追加
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Active Filters inside Modal */}
+                        {attributeFilters.length > 0 && (
+                            <div>
+                                 <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wide">適用中の属性フィルタ</label>
+                                 <div className="flex flex-wrap gap-2">
+                                    {attributeFilters.map((filter, index) => (
+                                        <Badge key={index} color="green" className="flex items-center gap-1">
+                                            {dataMap?.attributes.find(a => a.id === filter.attributeId)?.name}: {filter.value}
+                                            <button onClick={() => handleRemoveAttributeFilter(index)} className="ml-1 text-emerald-700 hover:text-emerald-900">×</button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end pt-4">
+                            <Button onClick={() => setIsFilterModalOpen(false)}>完了</Button>
+                        </div>
+                    </div>
+                </Modal>
+            </div>
         )
     };
 
@@ -459,7 +626,7 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                 </Button>
             </div>
             
-            {items.length > 0 ? renderContent() : (
+            {(items.length > 0 || title === 'シリーズ') ? renderContent() : (
                 <Card className="text-center py-10 text-slate-500 dark:text-slate-400">
                     {title}が見つかりません。
                 </Card>

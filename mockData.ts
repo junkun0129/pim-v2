@@ -1,5 +1,5 @@
 
-import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate, WebCatalog, User, Project, ChatMessage, BrainstormIdea, Complaint, Driver, StockTransfer } from './types';
+import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate, WebCatalog, User, Project, ChatMessage, BrainstormIdea, Complaint, Driver, StockTransfer, Role } from './types';
 
 export const MOCK_CATEGORIES: Category[] = [
     { id: 'cat1', name: '日用品' },
@@ -175,10 +175,38 @@ export const MOCK_CATALOGS: WebCatalog[] = [
 
 // --- Project / Collaboration Mock Data ---
 
+export const MOCK_ROLES: Role[] = [
+    { 
+        id: 'role_admin', 
+        name: 'システム管理者', 
+        description: 'すべての機能にアクセスできます。',
+        permissions: ['ACCESS_SKU', 'ACCESS_OMS', 'ACCESS_EC', 'ACCESS_CATALOG', 'ACCESS_PROJECT', 'ACCESS_ADMIN'] 
+    },
+    { 
+        id: 'role_manager', 
+        name: '商品マネージャー', 
+        description: 'マスタ管理とプロジェクト管理が可能です。',
+        permissions: ['ACCESS_SKU', 'ACCESS_PROJECT', 'ACCESS_CATALOG'] 
+    },
+    { 
+        id: 'role_staff', 
+        name: '店舗スタッフ', 
+        description: '在庫確認、発注、POP作成のみ可能です。',
+        permissions: ['ACCESS_OMS', 'ACCESS_EC'] // POP is under 'ACCESS_OMS' (Retail & Operations) context for now or allow SKU read?
+    },
+    {
+        id: 'role_creator',
+        name: 'コンテンツクリエイター',
+        description: 'WebカタログとPOP作成に特化しています。',
+        permissions: ['ACCESS_CATALOG', 'ACCESS_SKU'] // Needs SKU access to create content
+    }
+];
+
 export const MOCK_USERS: User[] = [
-    { id: 'user1', name: '自分 (PM)', avatarUrl: 'https://placehold.co/100/3b82f6/ffffff?text=ME' },
-    { id: 'user2', name: '田中 健', avatarUrl: 'https://placehold.co/100/10b981/ffffff?text=TK' },
-    { id: 'user3', name: '佐藤 愛', avatarUrl: 'https://placehold.co/100/f59e0b/ffffff?text=AS' },
+    { id: 'user1', name: '自分 (Admin)', avatarUrl: 'https://placehold.co/100/3b82f6/ffffff?text=ME', roleId: 'role_admin' },
+    { id: 'user2', name: '田中 健 (Manager)', avatarUrl: 'https://placehold.co/100/10b981/ffffff?text=TK', roleId: 'role_manager' },
+    { id: 'user3', name: '佐藤 愛 (Creator)', avatarUrl: 'https://placehold.co/100/f59e0b/ffffff?text=AS', roleId: 'role_creator' },
+    { id: 'user4', name: '鈴木 一郎 (Staff)', avatarUrl: 'https://placehold.co/100/6366f1/ffffff?text=IS', roleId: 'role_staff' },
 ];
 
 export const MOCK_PROJECTS: Project[] = [

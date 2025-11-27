@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder, WebCatalog, Project, Complaint, Driver, StockTransfer } from './types';
+import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder, WebCatalog, Project, Complaint, Driver, StockTransfer, User, Role } from './types';
 import Sidebar from './components/Sidebar';
 import SkuView from './components/SkuView';
 import GenericManager from './components/GenericManager';
@@ -10,7 +10,8 @@ import EcService from './components/EcService';
 import CreativeStudio from './components/CreativeStudio';
 import WebCatalogManager from './components/WebCatalogManager';
 import ProjectManager from './components/ProjectManager';
-import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS, MOCK_CATALOGS, MOCK_PROJECTS, MOCK_COMPLAINTS, MOCK_DRIVERS, MOCK_TRANSFERS } from './mockData';
+import AdminPanel from './components/AdminPanel';
+import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS, MOCK_CATALOGS, MOCK_PROJECTS, MOCK_COMPLAINTS, MOCK_DRIVERS, MOCK_TRANSFERS, MOCK_USERS, MOCK_ROLES } from './mockData';
 import { APP_CONFIG } from './config';
 import { api } from './api';
 import { ToastContainer, ToastMessage, ToastType } from './components/ui/Toast';
@@ -38,7 +39,11 @@ export default function App() {
 
     // New Project State
     const [projects, setProjects] = useState<Project[]>([]);
-    const CURRENT_USER_ID = 'user1'; // Mock logged-in user
+    
+    // User & Role State
+    const [users, setUsers] = useState<User[]>([]);
+    const [roles, setRoles] = useState<Role[]>([]);
+    const [currentUserId, setCurrentUserId] = useState<string>('user1'); // Default to Admin
 
     const [activeView, setActiveView] = useState<ViewType>('SKUs');
     const [selectedSkuId, setSelectedSkuId] = useState<string | null>(null);
@@ -49,6 +54,9 @@ export default function App() {
     
     // Toast State
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+    const currentUser = useMemo(() => users.find(u => u.id === currentUserId) || null, [users, currentUserId]);
+    const currentUserRole = useMemo(() => roles.find(r => r.id === currentUser?.roleId) || null, [roles, currentUser]);
 
     const addToast = (type: ToastType, message: string) => {
         const id = Math.random().toString(36).substr(2, 9);
@@ -72,6 +80,8 @@ export default function App() {
             setTransfers(MOCK_TRANSFERS);
             setCatalogs(MOCK_CATALOGS);
             setProjects(MOCK_PROJECTS);
+            setUsers(MOCK_USERS);
+            setRoles(MOCK_ROLES);
 
             if (APP_CONFIG.useMockData) {
                 setSkus(MOCK_SKUS);
@@ -99,6 +109,12 @@ export default function App() {
         loadData();
     }, []);
 
+    // Permission Guard Logic
+    const hasAccess = (requiredPerm: string) => {
+        if (!currentUserRole) return false;
+        return currentUserRole.permissions.includes(requiredPerm as any);
+    };
+
     const dataMap = useMemo(() => ({
         categories,
         attributeSets,
@@ -121,6 +137,7 @@ export default function App() {
         }
     };
 
+    // ... [Previous handlers remain unchanged, just condensed for readability] ...
     const addSku = async (sku: Omit<Sku, 'id'>) => {
         await wrapMutation(async () => {
             let newSku: Sku;
@@ -129,9 +146,7 @@ export default function App() {
             } else {
                 newSku = await api.createSku(sku);
             }
-            
             setSkus(prev => [...prev, newSku]);
-            
             if (newSku.seriesId) {
                 setSeries(prev => prev.map(s => s.id === newSku.seriesId ? { ...s, childSkuIds: [...s.childSkuIds, newSku.id] } : s));
             }
@@ -145,19 +160,13 @@ export default function App() {
         }, 'SKUを更新しました');
     };
     
-    // Batch Import Logic
     const importSkus = async (newSkus: Omit<Sku, 'id'>[]) => {
         await wrapMutation(async () => {
             if (APP_CONFIG.useMockData) {
-                const skusWithIds = newSkus.map((sku, index) => ({
-                    ...sku,
-                    id: `sku-imp-${Date.now()}-${index}`
-                }));
+                const skusWithIds = newSkus.map((sku, index) => ({ ...sku, id: `sku-imp-${Date.now()}-${index}` }));
                 setSkus(prev => [...prev, ...skusWithIds]);
             } else {
-                for (const sku of newSkus) {
-                    await api.createSku(sku);
-                }
+                for (const sku of newSkus) { await api.createSku(sku); }
                 const data = await api.fetchAllData();
                 setSkus(data.skus || []);
             }
@@ -167,11 +176,7 @@ export default function App() {
     const addSeries = async (item: Omit<Series, 'id'|'childSkuIds'>) => {
         await wrapMutation(async () => {
             let newSeries: Series;
-            if (APP_CONFIG.useMockData) {
-                newSeries = { ...item, id: `ser${Date.now()}`, childSkuIds:[] };
-            } else {
-                newSeries = await api.createSeries(item);
-            }
+            if (APP_CONFIG.useMockData) { newSeries = { ...item, id: `ser${Date.now()}`, childSkuIds:[] }; } else { newSeries = await api.createSeries(item); }
             setSeries(prev => [...prev, newSeries]);
         }, 'シリーズを追加しました');
     };
@@ -179,11 +184,7 @@ export default function App() {
     const addCategory = async (item: { name: string; parentId?: string }) => {
         await wrapMutation(async () => {
             let newCategory: Category;
-            if (APP_CONFIG.useMockData) {
-                newCategory = { ...item, id: `cat${Date.now()}` };
-            } else {
-                newCategory = await api.createCategory(item);
-            }
+            if (APP_CONFIG.useMockData) { newCategory = { ...item, id: `cat${Date.now()}` }; } else { newCategory = await api.createCategory(item); }
             setCategories(prev => [...prev, newCategory]);
         }, 'カテゴリを追加しました');
     };
@@ -191,11 +192,7 @@ export default function App() {
     const addAttribute = async (item: { name: string }) => {
         await wrapMutation(async () => {
             let newAttr: Attribute;
-            if (APP_CONFIG.useMockData) {
-                newAttr = { ...item, id: `attr${Date.now()}` };
-            } else {
-                newAttr = await api.createAttribute(item);
-            }
+            if (APP_CONFIG.useMockData) { newAttr = { ...item, id: `attr${Date.now()}` }; } else { newAttr = await api.createAttribute(item); }
             setAttributes(prev => [...prev, newAttr]);
         }, '属性を追加しました');
     };
@@ -203,11 +200,7 @@ export default function App() {
     const addAttributeSet = async (item: { name: string }) => {
          await wrapMutation(async () => {
             let newSet: AttributeSet;
-            if (APP_CONFIG.useMockData) {
-                newSet = { ...item, id: `as${Date.now()}`, attributeIds: [] };
-            } else {
-                newSet = await api.createAttributeSet(item);
-            }
+            if (APP_CONFIG.useMockData) { newSet = { ...item, id: `as${Date.now()}`, attributeIds: [] }; } else { newSet = await api.createAttributeSet(item); }
             setAttributeSets(prev => [...prev, newSet]);
         }, '属性セットを追加しました');
     };
@@ -229,29 +222,16 @@ export default function App() {
     };
     
     const deleteCategory = async (id: string) => {
-        if (!window.confirm('このカテゴリを削除しますか？サブカテゴリもすべて削除されます。')) return;
-        
+        if (!window.confirm('このカテゴリを削除しますか？')) return;
         await wrapMutation(async () => {
-            // Find all categories to delete (self + descendants)
             const idsToDelete = new Set<string>([id]);
             let currentLayer = [id];
-            
             while(currentLayer.length > 0) {
                 const nextLayer: string[] = [];
-                categories.forEach(c => {
-                    if (c.parentId && currentLayer.includes(c.parentId)) {
-                        idsToDelete.add(c.id);
-                        nextLayer.push(c.id);
-                    }
-                });
+                categories.forEach(c => { if (c.parentId && currentLayer.includes(c.parentId)) { idsToDelete.add(c.id); nextLayer.push(c.id); } });
                 currentLayer = nextLayer;
             }
-
-            if (!APP_CONFIG.useMockData) {
-                const deletePromises = Array.from(idsToDelete).map(catId => api.deleteCategory(catId));
-                await Promise.all(deletePromises);
-            }
-            
+            if (!APP_CONFIG.useMockData) { const deletePromises = Array.from(idsToDelete).map(catId => api.deleteCategory(catId)); await Promise.all(deletePromises); }
             setCategories(prev => prev.filter(c => !idsToDelete.has(c.id)));
         }, 'カテゴリとサブカテゴリを削除しました');
     };
@@ -275,9 +255,7 @@ export default function App() {
     const updateAttributeSet = async (setId: string, attributeIds: string[]) => {
         await wrapMutation(async () => {
             if (!APP_CONFIG.useMockData) await api.updateAttributeSet(setId, attributeIds);
-            setAttributeSets(prev => prev.map(set => 
-                set.id === setId ? { ...set, attributeIds } : set
-            ));
+            setAttributeSets(prev => prev.map(set => set.id === setId ? { ...set, attributeIds } : set));
         }, '属性セットを更新しました');
     };
     
@@ -288,14 +266,8 @@ export default function App() {
         }, 'シリーズを更新しました');
     };
 
-    // --- OMS Actions ---
     const createOrder = (orderData: Omit<Order, 'id' | 'status' | 'orderDate'>) => {
-        const newOrder: Order = {
-            id: `ord-${Date.now()}`,
-            ...orderData,
-            status: 'PENDING',
-            orderDate: new Date().toISOString().split('T')[0]
-        };
+        const newOrder: Order = { id: `ord-${Date.now()}`, ...orderData, status: 'PENDING', orderDate: new Date().toISOString().split('T')[0] };
         setOrders(prev => [newOrder, ...prev]);
         addToast('success', '発注依頼を送信しました');
     };
@@ -317,138 +289,92 @@ export default function App() {
     };
 
     const handleTransferStock = (transferData: Omit<StockTransfer, 'id' | 'status' | 'date'>) => {
-        // 1. Deduct from Source
         const sourceInventory = inventory.find(i => i.skuId === transferData.skuId && i.branchId === transferData.fromBranchId);
         if (!sourceInventory || sourceInventory.quantity < transferData.quantity) {
             addToast('error', '移動元の在庫が不足しています');
             return;
         }
-
-        // 2. Add Transfer Record
-        const newTransfer: StockTransfer = {
-            id: `tr-${Date.now()}`,
-            ...transferData,
-            status: 'COMPLETED', // Immediate for mock
-            date: new Date().toISOString().split('T')[0]
-        };
+        const newTransfer: StockTransfer = { id: `tr-${Date.now()}`, ...transferData, status: 'COMPLETED', date: new Date().toISOString().split('T')[0] };
         setTransfers(prev => [...prev, newTransfer]);
-
-        // 3. Update Inventory (Immediate Transfer for Demo)
         setInventory(prev => {
             const temp = [...prev];
-            // Deduct Source
             const srcIdx = temp.findIndex(i => i.skuId === transferData.skuId && i.branchId === transferData.fromBranchId);
             if (srcIdx >= 0) temp[srcIdx] = { ...temp[srcIdx], quantity: temp[srcIdx].quantity - transferData.quantity };
-            
-            // Add Destination
             const destIdx = temp.findIndex(i => i.skuId === transferData.skuId && i.branchId === transferData.toBranchId);
             if (destIdx >= 0) {
                 temp[destIdx] = { ...temp[destIdx], quantity: temp[destIdx].quantity + transferData.quantity };
             } else {
-                temp.push({ 
-                    skuId: transferData.skuId, 
-                    branchId: transferData.toBranchId, 
-                    quantity: transferData.quantity, 
-                    lastUpdated: new Date().toISOString().split('T')[0] 
-                });
+                temp.push({ skuId: transferData.skuId, branchId: transferData.toBranchId, quantity: transferData.quantity, lastUpdated: new Date().toISOString().split('T')[0] });
             }
             return temp;
         });
-
         addToast('success', '在庫移動が完了しました');
     };
 
-    // --- EC Actions ---
     const handlePlaceEcOrder = (skuId: string, quantity: number) => {
-        // 1. Find EC Branch
         const ecBranch = branches.find(b => b.type === 'EC');
-        if (!ecBranch) {
-            addToast('error', 'EC店舗設定が見つかりません');
-            return;
-        }
-
-        // 2. Check Inventory
+        if (!ecBranch) { addToast('error', 'EC店舗設定が見つかりません'); return; }
         const targetInventory = inventory.find(i => i.skuId === skuId && i.branchId === ecBranch.id);
-        if (!targetInventory || targetInventory.quantity < quantity) {
-            addToast('error', '在庫が不足しています');
-            return;
-        }
-
-        // 3. Deduct Inventory (Mock Update)
-        setInventory(prev => prev.map(i => {
-            if (i.skuId === skuId && i.branchId === ecBranch.id) {
-                return { ...i, quantity: i.quantity - quantity };
-            }
-            return i;
-        }));
-
-        // 4. Create Customer Order
+        if (!targetInventory || targetInventory.quantity < quantity) { addToast('error', '在庫が不足しています'); return; }
+        setInventory(prev => prev.map(i => { if (i.skuId === skuId && i.branchId === ecBranch.id) { return { ...i, quantity: i.quantity - quantity }; } return i; }));
         const sku = skus.find(s => s.id === skuId);
-        const newCustomerOrder: CustomerOrder = {
-            id: `co-${Date.now()}`,
-            customerName: 'ゲスト購入者',
-            skuId,
-            quantity,
-            totalPrice: (sku?.price || 0) * quantity,
-            orderDate: new Date().toLocaleString(),
-            status: 'PROCESSING'
-        };
-
+        const newCustomerOrder: CustomerOrder = { id: `co-${Date.now()}`, customerName: 'ゲスト購入者', skuId, quantity, totalPrice: (sku?.price || 0) * quantity, orderDate: new Date().toLocaleString(), status: 'PROCESSING' };
         setCustomerOrders(prev => [newCustomerOrder, ...prev]);
         addToast('success', '購入が完了しました！');
     };
 
-    // --- Creative Studio Actions ---
     const handleSaveAsset = async (skuId: string, assetName: string, assetDataUrl: string) => {
-        const newAsset = {
-            id: `asset-${Date.now()}`,
-            type: 'DESIGN' as const,
-            name: assetName,
-            url: assetDataUrl,
-            createdAt: new Date().toISOString()
-        };
-
-        setSkus(prev => prev.map(s => {
-            if (s.id === skuId) {
-                return { ...s, assets: [...(s.assets || []), newAsset] };
-            }
-            return s;
-        }));
-
+        const newAsset = { id: `asset-${Date.now()}`, type: 'DESIGN' as const, name: assetName, url: assetDataUrl, createdAt: new Date().toISOString() };
+        setSkus(prev => prev.map(s => { if (s.id === skuId) { return { ...s, assets: [...(s.assets || []), newAsset] }; } return s; }));
         addToast('success', 'デザインを保存しました');
     };
 
-    // --- Web Catalog Actions ---
     const handleSaveCatalog = (catalog: WebCatalog) => {
-        // If it exists, update; otherwise add
         const exists = catalogs.some(c => c.id === catalog.id);
-        if (exists) {
-            setCatalogs(prev => prev.map(c => c.id === catalog.id ? catalog : c));
-            addToast('success', 'カタログを更新しました');
-        } else {
-            setCatalogs(prev => [...prev, catalog]);
-            addToast('success', '新規カタログを作成しました');
-        }
+        if (exists) { setCatalogs(prev => prev.map(c => c.id === catalog.id ? catalog : c)); addToast('success', 'カタログを更新しました'); } else { setCatalogs(prev => [...prev, catalog]); addToast('success', '新規カタログを作成しました'); }
     };
 
     const handleDeleteCatalog = (id: string) => {
-        if(window.confirm('このカタログを削除しますか？')) {
-            setCatalogs(prev => prev.filter(c => c.id !== id));
-            addToast('success', 'カタログを削除しました');
-        }
+        if(window.confirm('このカタログを削除しますか？')) { setCatalogs(prev => prev.filter(c => c.id !== id)); addToast('success', 'カタログを削除しました'); }
     };
 
-    // --- Project Actions ---
     const handleCreateProject = (project: Omit<Project, 'id' | 'createdAt' | 'status'>) => {
-        const newProject: Project = {
-            id: `proj-${Date.now()}`,
-            ...project,
-            status: 'PLANNING',
-            createdAt: new Date().toISOString()
-        };
+        const newProject: Project = { id: `proj-${Date.now()}`, ...project, status: 'PLANNING', createdAt: new Date().toISOString() };
         setProjects(prev => [...prev, newProject]);
         addToast('success', '新規プロジェクトを作成しました');
     };
+
+    // --- Admin Actions ---
+    const handleUpdateUserRole = (userId: string, roleId: string) => {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, roleId } : u));
+        addToast('success', 'ユーザー権限を更新しました');
+    };
+
+    const handleCreateRole = (role: Omit<Role, 'id'>) => {
+        const newRole: Role = {
+            id: `role_${Date.now()}`,
+            ...role
+        };
+        setRoles(prev => [...prev, newRole]);
+        addToast('success', '新しいロールを作成しました');
+    };
+
+    const handleUpdateRole = (role: Role) => {
+        setRoles(prev => prev.map(r => r.id === role.id ? role : r));
+        addToast('success', 'ロール設定を更新しました');
+    };
+
+    const handleDeleteRole = (roleId: string) => {
+        // Prevent deleting active roles if needed, for now just delete
+        if (users.some(u => u.roleId === roleId)) {
+            addToast('error', 'このロールは使用中のため削除できません');
+            return;
+        }
+        setRoles(prev => prev.filter(r => r.id !== roleId));
+        addToast('success', 'ロールを削除しました');
+    };
+    
+    // --- Navigation ---
 
     const handleViewSku = (skuId: string) => {
         setSelectedSkuId(skuId);
@@ -460,6 +386,13 @@ export default function App() {
         setActiveView('SKUs');
     };
 
+    const handleSwitchUser = (userId: string) => {
+        setCurrentUserId(userId);
+        setActiveView('SKUs'); // Reset view on user switch to be safe
+        addToast('info', `ユーザーを切り替えました`);
+    };
+
+    // --- Render Guard Logic ---
     const renderContent = () => {
         if (isLoading) {
             return (
@@ -476,36 +409,42 @@ export default function App() {
             return (
                 <div className="flex h-full items-center justify-center text-red-600">
                     <div className="text-center p-8 bg-white dark:bg-zinc-800 rounded-xl shadow-xl max-w-lg border border-red-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                         <p className="text-xl font-bold mb-2">Error Occurred</p>
-                        <p className="mb-6 text-zinc-600 dark:text-zinc-300">{error}</p>
-                        <button onClick={() => window.location.reload()} className="px-5 py-2.5 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors shadow-lg">Reload Page</button>
+                        <p className="mb-6">{error}</p>
                     </div>
                 </div>
             )
         }
 
+        // Access Control Check
+        const accessDenied = (
+            <div className="flex h-full items-center justify-center text-zinc-500">
+                <div className="text-center">
+                    <div className="text-4xl mb-2">🔒</div>
+                    <h2 className="text-xl font-bold text-zinc-800 dark:text-white">Access Denied</h2>
+                    <p>このページにアクセスする権限がありません。</p>
+                </div>
+            </div>
+        );
+
         switch (activeView) {
             case 'SKUs':
-                return <SkuView skus={skus} dataMap={dataMap} addSku={addSku} updateSku={updateSku} deleteSku={deleteSku} onViewSku={handleViewSku} onImportSkus={importSkus} />;
-            case 'SKU_DETAIL': {
+                return hasAccess('ACCESS_SKU') ? <SkuView skus={skus} dataMap={dataMap} addSku={addSku} updateSku={updateSku} deleteSku={deleteSku} onViewSku={handleViewSku} onImportSkus={importSkus} /> : accessDenied;
+            case 'SKU_DETAIL':
+                if (!hasAccess('ACCESS_SKU')) return accessDenied;
                 const selectedSku = skus.find(s => s.id === selectedSkuId);
-                if (!selectedSku) {
-                    handleBackToSkus();
-                    return null;
-                }
+                if (!selectedSku) { handleBackToSkus(); return null; }
                 return <SkuDetailView sku={selectedSku} dataMap={dataMap} onBack={handleBackToSkus} />;
-            }
             case 'Series':
-                return <GenericManager title="シリーズ" items={series} onAdd={addSeries} onDelete={deleteSeries} onUpdateSeries={updateSeries} dataMap={dataMap} />;
+                return hasAccess('ACCESS_SKU') ? <GenericManager title="シリーズ" items={series} onAdd={addSeries} onDelete={deleteSeries} onUpdateSeries={updateSeries} dataMap={dataMap} /> : accessDenied;
             case 'Categories':
-                return <GenericManager title="カテゴリ" items={categories} onAdd={addCategory} onDelete={deleteCategory} />;
+                return hasAccess('ACCESS_SKU') ? <GenericManager title="カテゴリ" items={categories} onAdd={addCategory} onDelete={deleteCategory} /> : accessDenied;
             case 'Attributes':
-                return <GenericManager title="属性" items={attributes} onAdd={addAttribute} onDelete={deleteAttribute} />;
+                return hasAccess('ACCESS_SKU') ? <GenericManager title="属性" items={attributes} onAdd={addAttribute} onDelete={deleteAttribute} /> : accessDenied;
             case 'Attribute Sets':
-                return <GenericManager title="属性セット" items={attributeSets} onAdd={addAttributeSet} onDelete={deleteAttributeSet} onUpdateAttributeSet={updateAttributeSet} dataMap={dataMap} />;
+                return hasAccess('ACCESS_SKU') ? <GenericManager title="属性セット" items={attributeSets} onAdd={addAttributeSet} onDelete={deleteAttributeSet} onUpdateAttributeSet={updateAttributeSet} dataMap={dataMap} /> : accessDenied;
             case 'Orders':
-                return (
+                return hasAccess('ACCESS_OMS') ? (
                     <OrderManager 
                         skus={skus} 
                         series={series}
@@ -523,9 +462,9 @@ export default function App() {
                         currentBranchId={currentBranchId}
                         setCurrentBranchId={setCurrentBranchId}
                     />
-                );
+                ) : accessDenied;
             case 'EC':
-                return (
+                return hasAccess('ACCESS_EC') ? (
                     <EcService 
                         skus={skus}
                         series={series}
@@ -534,17 +473,17 @@ export default function App() {
                         customerOrders={customerOrders}
                         onPlaceOrder={handlePlaceEcOrder}
                     />
-                );
+                ) : accessDenied;
             case 'CREATIVE':
-                return (
+                return hasAccess('ACCESS_OMS') ? ( // Assuming POP is part of Retail Ops
                     <CreativeStudio 
                         skus={skus}
                         branches={branches}
                         onSaveAsset={handleSaveAsset}
                     />
-                );
+                ) : accessDenied;
             case 'CATALOG':
-                return (
+                return hasAccess('ACCESS_CATALOG') ? (
                     <WebCatalogManager
                         catalogs={catalogs}
                         skus={skus}
@@ -553,23 +492,41 @@ export default function App() {
                         onSaveCatalog={handleSaveCatalog}
                         onDeleteCatalog={handleDeleteCatalog}
                     />
-                );
+                ) : accessDenied;
             case 'PROJECTS':
-                return (
+                return hasAccess('ACCESS_PROJECT') ? (
                     <ProjectManager
                         projects={projects}
                         onCreateProject={handleCreateProject}
-                        currentUserId={CURRENT_USER_ID}
+                        currentUserId={currentUserId}
                     />
-                )
+                ) : accessDenied;
+            case 'ADMIN':
+                return hasAccess('ACCESS_ADMIN') ? (
+                    <AdminPanel 
+                        users={users} 
+                        roles={roles} 
+                        onUpdateUserRole={handleUpdateUserRole} 
+                        onUpdateRole={handleUpdateRole} 
+                        onCreateRole={handleCreateRole}
+                        onDeleteRole={handleDeleteRole}
+                    />
+                ) : accessDenied;
             default:
-                return <SkuView skus={skus} dataMap={dataMap} addSku={addSku} updateSku={updateSku} deleteSku={deleteSku} onViewSku={handleViewSku} />;
+                return hasAccess('ACCESS_SKU') ? <SkuView skus={skus} dataMap={dataMap} addSku={addSku} updateSku={updateSku} deleteSku={deleteSku} onViewSku={handleViewSku} /> : accessDenied;
         }
     };
 
     return (
         <div className="flex h-screen bg-gray-50/50 dark:bg-black font-sans overflow-hidden">
-            <Sidebar activeView={activeView} setActiveView={setActiveView} />
+            <Sidebar 
+                activeView={activeView} 
+                setActiveView={setActiveView} 
+                currentUser={currentUser}
+                userRole={currentUserRole}
+                availableUsers={users}
+                onSwitchUser={handleSwitchUser}
+            />
             <main className="flex-1 p-6 md:p-10 overflow-y-auto relative custom-scrollbar">
                 {isMutating && (
                     <div className="absolute inset-0 bg-white/60 dark:bg-black/60 z-50 flex items-center justify-center backdrop-blur-sm transition-all duration-300">
