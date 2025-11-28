@@ -18,11 +18,13 @@ export interface Category {
 
 export interface Asset {
     id: string;
-    type: 'IMAGE' | 'DESIGN';
+    type: 'IMAGE' | 'DESIGN' | 'VIDEO' | 'FILE';
     name: string;
     url: string;
     createdAt: string;
     branchId?: string; // Optional: Link asset to specific branch
+    mimeType?: string; // Optional: specific mime type
+    size?: string;
 }
 
 export interface Sku {
@@ -118,7 +120,7 @@ export interface StockTransfer {
     date: string;
 }
 
-export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG' | 'PROJECTS' | 'ADMIN';
+export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG' | 'PROJECTS' | 'CHANNEL_EXPORT' | 'ADMIN';
 
 // --- Creative Studio Types ---
 
@@ -201,6 +203,14 @@ export interface ChatMessage {
     timestamp: string;
 }
 
+export interface FileAttachment {
+    id: string;
+    name: string;
+    type: 'IMAGE' | 'VIDEO' | 'FILE';
+    url: string;
+    size?: string;
+}
+
 export interface BrainstormIdea {
     id: string;
     projectId: string;
@@ -208,17 +218,78 @@ export interface BrainstormIdea {
     content: string;
     color: 'yellow' | 'pink' | 'blue' | 'green';
     votes: number; // simple like count
+    attachments: FileAttachment[]; // New: support for multimedia
+    linkedDraftId?: string; // New: link to a created draft
+}
+
+export type DraftStatus = 'PROPOSAL' | 'REVIEW' | 'APPROVED' | 'REJECTED';
+
+export interface SkuDraft {
+    id: string;
+    projectId: string;
+    name: string;
+    proposedSkuId: string;
+    price?: number;
+    description: string;
+    status: DraftStatus;
+    authorId: string;
+    createdAt: string;
+    linkedIdeaId?: string; // New: link back to idea
+}
+
+// --- Channel Export Types ---
+
+export interface ExportColumn {
+    id: string;
+    headerName: string; // The column name in the export file (e.g. "product-title")
+    sourceField: string; // The internal field path (e.g. "name", "price", "attribute.size")
+    fallbackSourceField?: string; // New: Fallback field if primary is empty
+    defaultValue?: string;
+}
+
+export interface ExportChannel {
+    id: string;
+    name: string; // e.g. "Amazon JP", "Rakuten", "Shopify"
+    fileFormat: 'CSV' | 'TSV';
+    columns: ExportColumn[];
+    lastExported?: string;
 }
 
 // --- RBAC (Role Based Access Control) ---
 
 export type Permission = 
-    | 'ACCESS_SKU'      // Master Data (SKU, Series, Categories)
-    | 'ACCESS_OMS'      // Orders, Inventory, Logistics
-    | 'ACCESS_EC'       // EC Store management
-    | 'ACCESS_CATALOG'  // Web Catalog
-    | 'ACCESS_PROJECT'  // Projects & Chat
-    | 'ACCESS_ADMIN';   // User & Role Management
+    // System: Master Data (SKU, Series, Categories)
+    | 'MASTER_VIEW'
+    | 'MASTER_CREATE'
+    | 'MASTER_EDIT'
+    | 'MASTER_DELETE'
+    | 'MASTER_IMPORT'
+    | 'MASTER_EXPORT'
+    
+    // System: OMS (Order Management)
+    | 'OMS_VIEW'
+    | 'OMS_ORDER_CREATE'
+    
+    // System: EC
+    | 'EC_VIEW'
+    | 'EC_MANAGE'
+    
+    // System: Creative (POP)
+    | 'CREATIVE_VIEW'
+    | 'CREATIVE_EDIT'
+    
+    // System: Web Catalog
+    | 'CATALOG_VIEW'
+    | 'CATALOG_EDIT'
+    
+    // System: Projects
+    | 'PROJECT_VIEW'
+    | 'PROJECT_CREATE'
+    | 'PROJECT_EDIT' // Add members, etc.
+    
+    // System: Admin
+    | 'ADMIN_VIEW'
+    | 'ADMIN_MANAGE';
 
 export interface Role {
     id: string;

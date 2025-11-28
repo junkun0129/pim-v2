@@ -1,5 +1,5 @@
 
-import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate, WebCatalog, User, Project, ChatMessage, BrainstormIdea, Complaint, Driver, StockTransfer, Role } from './types';
+import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate, WebCatalog, User, Project, ChatMessage, BrainstormIdea, Complaint, Driver, StockTransfer, Role, SkuDraft, ExportChannel } from './types';
 
 export const MOCK_CATEGORIES: Category[] = [
     { id: 'cat1', name: '日用品' },
@@ -54,7 +54,9 @@ const baseSkus: Sku[] = [
         attributeValues: { 'attr9': 'Space Black', 'attr6': '128GB' }, 
         imageUrl: 'https://placehold.co/400x400/111827/ffffff?text=iPhone+14+Pro+BLK',
         assets: [
-            { id: 'a1', type: 'IMAGE', name: 'Main Product Image', url: 'https://placehold.co/400x400/111827/ffffff?text=iPhone+14+Pro+BLK', createdAt: '2023-10-01' }
+            { id: 'a1', type: 'IMAGE', name: 'Main Product Image', url: 'https://placehold.co/400x400/111827/ffffff?text=iPhone+14+Pro+BLK', createdAt: '2023-10-01' },
+            { id: 'a2', type: 'VIDEO', name: 'Product Reveal Teaser', url: 'https://www.w3schools.com/html/mov_bbb.mp4', createdAt: '2023-10-02', size: '15 MB' },
+            { id: 'a3', type: 'FILE', name: 'Spec_Sheet_v2.pdf', url: '#', createdAt: '2023-10-03', size: '2.4 MB' }
         ]
     },
     { id: 'sku2', name: 'iPhone 14 Blue', skuId: 'IP14-128-BLU', barcode: '4549995361234', price: 119800, seriesId: 'ser1', categoryIds: ['cat4', 'cat5'], attributeSetIds: [], attributeValues: { 'attr9': 'Blue', 'attr6': '128GB' }, assets: [] },
@@ -66,59 +68,68 @@ const baseSkus: Sku[] = [
 const generateBulkSkus = (): Sku[] => {
     const bulk: Sku[] = [];
     
-    // Pixel 7 Variations (5 items)
-    ['Obsidian', 'Snow', 'Lemongrass'].forEach((color, i) => {
-        bulk.push({
-            id: `sku_px_${i}`,
-            name: `Pixel 7 ${color} 128GB`,
-            skuId: `PXL7-128-${color.substring(0,3).toUpperCase()}`,
-            barcode: `490000000001${i}`,
-            price: 82500,
-            seriesId: 'ser3',
-            categoryIds: ['cat4', 'cat5'],
-            attributeSetIds: [],
-            attributeValues: { 'attr9': color, 'attr6': '128GB' },
-            imageUrl: `https://placehold.co/400x400/334155/ffffff?text=Pixel+7+${color}`
+    // Pixel 7 Variations (10 items)
+    const pxColors = ['Obsidian', 'Snow', 'Lemongrass', 'Hazel', 'Coral'];
+    const pxStorage = ['128GB', '256GB'];
+    pxColors.forEach((color, i) => {
+        pxStorage.forEach((storage, j) => {
+            bulk.push({
+                id: `sku_px_${i}_${j}`,
+                name: `Pixel 7 ${color} ${storage}`,
+                skuId: `PXL7-${storage}-${color.substring(0,3).toUpperCase()}`,
+                barcode: `490000000001${i}${j}`,
+                price: storage === '128GB' ? 82500 : 97900,
+                seriesId: 'ser3',
+                categoryIds: ['cat4', 'cat5'],
+                attributeSetIds: [],
+                attributeValues: { 'attr9': color, 'attr6': storage },
+                imageUrl: `https://placehold.co/400x400/334155/ffffff?text=Pixel+7+${color}`
+            });
         });
     });
 
-    // iPad Air Variations (5 items)
-    ['Space Gray', 'Starlight', 'Pink', 'Purple', 'Blue'].forEach((color, i) => {
-        bulk.push({
-            id: `sku_pad_${i}`,
-            name: `iPad Air Wi-Fi 64GB ${color}`,
-            skuId: `IPDA5-64-${color.substring(0,3).toUpperCase()}`,
-            barcode: `490000000002${i}`,
-            price: 92800,
-            seriesId: 'ser5',
-            categoryIds: ['cat4', 'cat7'],
-            attributeSetIds: [],
-            attributeValues: { 'attr9': color, 'attr6': '64GB' },
-            imageUrl: `https://placehold.co/400x400/a78bfa/ffffff?text=iPad+Air+${color}`
+    // iPad Air Variations (15 items)
+    const padColors = ['Space Gray', 'Starlight', 'Pink', 'Purple', 'Blue'];
+    const padStorage = ['64GB', '256GB', '512GB'];
+    padColors.forEach((color, i) => {
+        padStorage.forEach((storage, j) => {
+            bulk.push({
+                id: `sku_pad_${i}_${j}`,
+                name: `iPad Air Wi-Fi ${storage} ${color}`,
+                skuId: `IPDA5-${storage.replace('GB','')}-${color.substring(0,3).toUpperCase()}`,
+                barcode: `490000000002${i}${j}`,
+                price: 92800 + (j * 20000),
+                seriesId: 'ser5',
+                categoryIds: ['cat4', 'cat7'],
+                attributeSetIds: [],
+                attributeValues: { 'attr9': color, 'attr6': storage },
+                imageUrl: `https://placehold.co/400x400/a78bfa/ffffff?text=iPad+Air+${color}`
+            });
         });
     });
 
-    // More Cleaning Supplies (10 items)
-    for(let i=1; i<=10; i++) {
+    // Cleaning Supplies (30 items)
+    for(let i=1; i<=30; i++) {
+        const type = i % 3 === 0 ? 'スプレー' : i % 2 === 0 ? 'シート' : 'スポンジ';
         bulk.push({
             id: `sku_cln_${i}`,
-            name: `激落ちくん お掃除シート Type-${i}`,
-            skuId: `GEKI-SHT-${100+i}`,
+            name: `激落ちくん ${type} Type-${i}`,
+            skuId: `GEKI-${type === 'スプレー' ? 'SPR' : type === 'シート' ? 'SHT' : 'SPG'}-${100+i}`,
             barcode: `4903320579${130+i}`,
-            price: 450 + (i * 10),
+            price: 350 + (i * 10),
             seriesId: 'ser4',
             categoryIds: ['cat1', 'cat2', 'cat3'],
             attributeSetIds: [],
-            attributeValues: { 'attr1': `${i*10}枚入り` },
-            imageUrl: 'https://placehold.co/400x400/f1f5f9/475569?text=Sheet'
+            attributeValues: { 'attr1': type === 'シート' ? `${i*5}枚入り` : '通常サイズ' },
+            imageUrl: 'https://placehold.co/400x400/f1f5f9/475569?text=Clean'
         });
     }
 
-    // Kitchen Supplies (5 items)
-    for(let i=1; i<=5; i++) {
+    // Kitchen Supplies (10 items)
+    for(let i=1; i<=10; i++) {
         bulk.push({
             id: `sku_kit_${i}`,
-            name: `プレミアム・キッチンペーパー ${i}ロール`,
+            name: `プレミアム・キッチンペーパー ${i*2}ロール`,
             skuId: `KIT-PPR-${200+i}`,
             barcode: `490000000004${i}`,
             price: 298 * i,
@@ -260,25 +271,47 @@ export const MOCK_ROLES: Role[] = [
         id: 'role_admin', 
         name: 'システム管理者', 
         description: 'すべての機能にアクセスできます。',
-        permissions: ['ACCESS_SKU', 'ACCESS_OMS', 'ACCESS_EC', 'ACCESS_CATALOG', 'ACCESS_PROJECT', 'ACCESS_ADMIN'] 
+        permissions: [
+            'MASTER_VIEW', 'MASTER_CREATE', 'MASTER_EDIT', 'MASTER_DELETE', 'MASTER_IMPORT', 'MASTER_EXPORT',
+            'OMS_VIEW', 'OMS_ORDER_CREATE',
+            'EC_VIEW', 'EC_MANAGE',
+            'CREATIVE_VIEW', 'CREATIVE_EDIT',
+            'CATALOG_VIEW', 'CATALOG_EDIT',
+            'PROJECT_VIEW', 'PROJECT_CREATE', 'PROJECT_EDIT',
+            'ADMIN_VIEW', 'ADMIN_MANAGE'
+        ] 
     },
     { 
         id: 'role_manager', 
         name: '商品マネージャー', 
         description: 'マスタ管理とプロジェクト管理が可能です。',
-        permissions: ['ACCESS_SKU', 'ACCESS_PROJECT', 'ACCESS_CATALOG'] 
+        permissions: [
+            'MASTER_VIEW', 'MASTER_CREATE', 'MASTER_EDIT', 'MASTER_DELETE', 'MASTER_IMPORT', 'MASTER_EXPORT',
+            'PROJECT_VIEW', 'PROJECT_CREATE', 'PROJECT_EDIT',
+            'CATALOG_VIEW', 'CATALOG_EDIT'
+        ] 
     },
     { 
         id: 'role_staff', 
         name: '店舗スタッフ', 
-        description: '在庫確認、発注、POP作成のみ可能です。',
-        permissions: ['ACCESS_OMS', 'ACCESS_EC'] // POP is under 'ACCESS_OMS' (Retail & Operations) context for now or allow SKU read?
+        description: '在庫確認、発注、POP作成のみ可能です。プロジェクトは閲覧のみ。',
+        permissions: [
+            'OMS_VIEW', 'OMS_ORDER_CREATE',
+            'EC_VIEW',
+            'CREATIVE_VIEW', 'CREATIVE_EDIT',
+            'PROJECT_VIEW'
+        ] 
     },
     {
         id: 'role_creator',
         name: 'コンテンツクリエイター',
-        description: 'WebカタログとPOP作成に特化しています。',
-        permissions: ['ACCESS_CATALOG', 'ACCESS_SKU'] // Needs SKU access to create content
+        description: 'WebカタログとPOP作成に特化。プロジェクトで起案可能。',
+        permissions: [
+            'MASTER_VIEW',
+            'CATALOG_VIEW', 'CATALOG_EDIT',
+            'CREATIVE_VIEW', 'CREATIVE_EDIT',
+            'PROJECT_VIEW', 'PROJECT_CREATE'
+        ] 
     }
 ];
 
@@ -316,8 +349,61 @@ export const MOCK_CHAT_MESSAGES: ChatMessage[] = [
 ];
 
 export const MOCK_IDEAS: BrainstormIdea[] = [
-    { id: 'idea1', projectId: 'proj1', userId: 'user2', content: '竹繊維を使った生分解性スポンジ', color: 'green', votes: 2 },
-    { id: 'idea2', projectId: 'proj1', userId: 'user3', content: '詰め替え可能なボトルデザイン', color: 'blue', votes: 1 },
-    { id: 'idea3', projectId: 'proj1', userId: 'user1', content: 'お試しセット（3種入り）', color: 'yellow', votes: 3 },
-    { id: 'idea4', projectId: 'proj1', userId: 'user2', content: 'サブスクリプション販売モデル', color: 'pink', votes: 0 },
+    { id: 'idea1', projectId: 'proj1', userId: 'user2', content: '竹繊維を使った生分解性スポンジ', color: 'green', votes: 2, attachments: [] },
+    { id: 'idea2', projectId: 'proj1', userId: 'user3', content: '詰め替え可能なボトルデザイン', color: 'blue', votes: 1, attachments: [] },
+    { id: 'idea3', projectId: 'proj1', userId: 'user1', content: 'お試しセット（3種入り）', color: 'yellow', votes: 3, attachments: [] },
+    { id: 'idea4', projectId: 'proj1', userId: 'user2', content: 'サブスクリプション販売モデル', color: 'pink', votes: 0, attachments: [] },
+];
+
+export const MOCK_DRAFTS: SkuDraft[] = [
+    { 
+        id: 'draft1', 
+        projectId: 'proj1', 
+        name: '竹炭スポンジ (仮)', 
+        proposedSkuId: 'BAMBOO-001', 
+        price: 450, 
+        description: '抗菌作用のある竹炭を練り込んだプレミアムスポンジ。パッケージは紙製にしてプラ削減。', 
+        status: 'PROPOSAL', 
+        authorId: 'user2', 
+        createdAt: '2023-11-15',
+        linkedIdeaId: 'idea1'
+    },
+    { 
+        id: 'draft2', 
+        projectId: 'proj1', 
+        name: '詰め替えボトル 500ml', 
+        proposedSkuId: 'BOTTLE-RE-500', 
+        price: 800, 
+        description: 'シンプルで長く使えるデザインボトル。', 
+        status: 'APPROVED', 
+        authorId: 'user3', 
+        createdAt: '2023-11-16' 
+    },
+];
+
+export const MOCK_EXPORT_CHANNELS: ExportChannel[] = [
+    {
+        id: 'ch_amazon',
+        name: 'Amazon JP',
+        fileFormat: 'CSV',
+        columns: [
+            { id: 'c1', headerName: 'external_product_id', sourceField: 'barcode', defaultValue: '' },
+            { id: 'c2', headerName: 'item_name', sourceField: 'name', defaultValue: '' },
+            { id: 'c3', headerName: 'standard_price', sourceField: 'price', defaultValue: '' },
+            { id: 'c4', headerName: 'brand_name', sourceField: 'seriesId', defaultValue: 'Generic' },
+        ],
+        lastExported: '2023-11-20 14:00'
+    },
+    {
+        id: 'ch_rakuten',
+        name: '楽天市場 (CSV)',
+        fileFormat: 'CSV',
+        columns: [
+            { id: 'c1', headerName: '商品管理番号', sourceField: 'skuId', defaultValue: '' },
+            { id: 'c2', headerName: '商品名', sourceField: 'name', defaultValue: '' },
+            { id: 'c3', headerName: '販売価格', sourceField: 'price', defaultValue: '' },
+            { id: 'c4', headerName: 'PC用商品説明文', sourceField: 'name', defaultValue: '' },
+        ],
+        lastExported: '2023-11-18 09:30'
+    }
 ];

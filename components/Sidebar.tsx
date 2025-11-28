@@ -72,26 +72,28 @@ export default function Sidebar({ activeView, setActiveView, currentUser, userRo
     };
 
     const navItems: { view: ViewType; label: string; icon: React.ReactNode; requiredPerm: Permission }[] = [
-        { view: 'SKUs', label: 'SKU管理', icon: ICONS.dashboard, requiredPerm: 'ACCESS_SKU' },
-        { view: 'Series', label: 'シリーズ', icon: ICONS.series, requiredPerm: 'ACCESS_SKU' },
-        { view: 'Categories', label: 'カテゴリ', icon: ICONS.category, requiredPerm: 'ACCESS_SKU' },
-        { view: 'Attributes', label: '属性', icon: ICONS.list, requiredPerm: 'ACCESS_SKU' },
-        { view: 'Attribute Sets', label: '属性セット', icon: ICONS.attributes, requiredPerm: 'ACCESS_SKU' },
+        { view: 'SKUs', label: 'SKU管理', icon: ICONS.dashboard, requiredPerm: 'MASTER_VIEW' },
+        { view: 'Series', label: 'シリーズ', icon: ICONS.series, requiredPerm: 'MASTER_VIEW' },
+        { view: 'Categories', label: 'カテゴリ', icon: ICONS.category, requiredPerm: 'MASTER_VIEW' },
+        { view: 'Attributes', label: '属性', icon: ICONS.list, requiredPerm: 'MASTER_VIEW' },
+        { view: 'Attribute Sets', label: '属性セット', icon: ICONS.attributes, requiredPerm: 'MASTER_VIEW' },
     ];
     
+    // Extensions / Operations
     const omsNavItems: { view: ViewType; label: string; icon: React.ReactNode; requiredPerm: Permission }[] = [
-        { view: 'Orders', label: '在庫・発注', icon: ICONS.truck, requiredPerm: 'ACCESS_OMS' },
-        { view: 'EC', label: 'ECストア', icon: ICONS.globe, requiredPerm: 'ACCESS_EC' },
-        { view: 'CREATIVE', label: 'POP作成', icon: ICONS.palette, requiredPerm: 'ACCESS_OMS' }, // Assuming POP is part of OMS ops
-        { view: 'CATALOG', label: 'Webカタログ', icon: ICONS.book, requiredPerm: 'ACCESS_CATALOG' },
-        { view: 'PROJECTS', label: '企画プロジェクト', icon: ICONS.users, requiredPerm: 'ACCESS_PROJECT' },
+        { view: 'CHANNEL_EXPORT', label: 'チャネル連携', icon: ICONS.exportCloud, requiredPerm: 'MASTER_EXPORT' },
+        { view: 'Orders', label: '在庫・発注', icon: ICONS.truck, requiredPerm: 'OMS_VIEW' },
+        { view: 'EC', label: 'ECストア', icon: ICONS.globe, requiredPerm: 'EC_VIEW' },
+        { view: 'CREATIVE', label: 'POP作成', icon: ICONS.palette, requiredPerm: 'CREATIVE_VIEW' },
+        { view: 'CATALOG', label: 'Webカタログ', icon: ICONS.book, requiredPerm: 'CATALOG_VIEW' },
+        { view: 'PROJECTS', label: '企画プロジェクト', icon: ICONS.users, requiredPerm: 'PROJECT_VIEW' },
     ];
 
-    const adminNavItem = { view: 'ADMIN' as ViewType, label: 'システム管理', icon: ICONS.settings, requiredPerm: 'ACCESS_ADMIN' as Permission };
+    const adminNavItem = { view: 'ADMIN' as ViewType, label: 'システム管理', icon: ICONS.settings, requiredPerm: 'ADMIN_VIEW' as Permission };
 
     const filteredNavItems = navItems.filter(item => hasPermission(item.requiredPerm));
     const filteredOmsItems = omsNavItems.filter(item => hasPermission(item.requiredPerm));
-    const showAdmin = hasPermission('ACCESS_ADMIN');
+    const showAdmin = hasPermission('ADMIN_VIEW');
 
     return (
         <>
@@ -156,7 +158,7 @@ export default function Sidebar({ activeView, setActiveView, currentUser, userRo
                             <div>
                                 {(!isCollapsed) && (
                                     <div className="px-3 mb-2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest whitespace-nowrap">
-                                        Retail & Operations
+                                        Extensions
                                     </div>
                                 )}
                                 {filteredOmsItems.map((item) => (

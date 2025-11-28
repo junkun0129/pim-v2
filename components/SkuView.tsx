@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Sku, Series, Category, AttributeSet, Attribute } from '../types';
+import type { Sku, Series, Category, AttributeSet, Attribute, Permission } from '../types';
 import SkuTable from './SkuTable';
 import SkuModal from './modals/SkuModal';
 import ImportModal from './modals/ImportModal';
@@ -25,6 +25,7 @@ interface SkuViewProps {
     deleteSku: (id: string) => void;
     onViewSku: (skuId: string) => void;
     onImportSkus?: (skus: Omit<Sku, 'id'>[]) => void;
+    userPermissions: Permission[];
 }
 
 interface AttributeFilter {
@@ -32,9 +33,7 @@ interface AttributeFilter {
     value: string;
 }
 
-const ITEMS_PER_PAGE = 10;
-
-export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, onViewSku, onImportSkus }: SkuViewProps) {
+export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, onViewSku, onImportSkus, userPermissions }: SkuViewProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -52,7 +51,16 @@ export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, o
 
     // Pagination & Selection State
     const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const [selectedSkuIds, setSelectedSkuIds] = useState<Set<string>>(new Set());
+
+    // Permissions
+    const canCreate = userPermissions.includes('MASTER_CREATE');
+    const canEdit = userPermissions.includes('MASTER_EDIT');
+    const canDelete = userPermissions.includes('MASTER_DELETE');
+    const canImport = userPermissions.includes('MASTER_IMPORT');
+    // Export is usually allowed if View is allowed, but we can check specifically if needed. 
+    // Assuming view access implies export for now unless MASTER_EXPORT is strictly for channel export.
 
     const filteredSkus = useMemo(() => {
         return skus.filter(sku => {
@@ -88,14 +96,14 @@ export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, o
         });
     }, [skus, searchTerm, categoryFilter, seriesFilter, attributeFilters, dataMap.series]);
 
-    // Reset pagination when filters change
+    // Reset pagination when filters or items per page change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, categoryFilter, seriesFilter, attributeFilters]);
+    }, [searchTerm, categoryFilter, seriesFilter, attributeFilters, itemsPerPage]);
 
     // Pagination Calculations
-    const totalPages = Math.ceil(filteredSkus.length / ITEMS_PER_PAGE);
-    const paginatedSkus = filteredSkus.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(filteredSkus.length / itemsPerPage);
+    const paginatedSkus = filteredSkus.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     // Selection Handlers
     const handleToggleSelect = (id: string) => {
@@ -263,9 +271,11 @@ export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, o
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <h1 className="text-2xl md:text-3xl font-bold text-zinc-800 dark:text-white font-['Plus_Jakarta_Sans']">SKU Management</h1>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
-                    <Button variant="secondary" onClick={() => setIsImportModalOpen(true)} className="flex-1 sm:flex-none">
-                        {ICONS.upload} <span className="ml-2">Import</span>
-                    </Button>
+                    {canImport && (
+                        <Button variant="secondary" onClick={() => setIsImportModalOpen(true)} className="flex-1 sm:flex-none">
+                            {ICONS.upload} <span className="ml-2">Import</span>
+                        </Button>
+                    )}
                      <div className="relative group">
                          {/* Split Export Button */}
                         <div className="flex rounded-lg shadow-sm">
@@ -277,9 +287,11 @@ export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, o
                             </Button>
                         </div>
                     </div>
-                    <Button onClick={handleOpenCreateModal} className="flex-1 sm:flex-none shadow-lg shadow-zinc-900/20">
-                        {ICONS.plus} <span className="ml-2">Add SKU</span>
-                    </Button>
+                    {canCreate && (
+                        <Button onClick={handleOpenCreateModal} className="flex-1 sm:flex-none shadow-lg shadow-zinc-900/20">
+                            {ICONS.plus} <span className="ml-2">Add SKU</span>
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -372,9 +384,9 @@ export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, o
             <SkuTable 
                 skus={paginatedSkus} 
                 dataMap={dataMap} 
-                onDelete={deleteSku} 
+                onDelete={canDelete ? deleteSku : () => {}} 
                 onViewSku={onViewSku} 
-                onEdit={handleOpenEditModal}
+                onEdit={canEdit ? handleOpenEditModal : () => {}}
                 selectedIds={selectedSkuIds}
                 onToggleSelect={handleToggleSelect}
                 onToggleAll={handleToggleAllPage}
@@ -382,34 +394,48 @@ export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, o
             />
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800 pt-4">
-                    <div className="text-sm text-zinc-500">
-                        全 {filteredSkus.length} 件中 {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredSkus.length)} 件を表示
-                    </div>
-                    <div className="flex gap-2">
-                        <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
+            {filteredSkus.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between border-t border-zinc-200 dark:border-zinc-800 pt-4 gap-4">
+                    <div className="flex items-center gap-4 text-sm text-zinc-500">
+                        <span>
+                            全 {filteredSkus.length} 件中 {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredSkus.length)} 件を表示
+                        </span>
+                        <select 
+                            value={itemsPerPage}
+                            onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                            className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded text-xs py-1"
                         >
-                            前へ
-                        </Button>
-                        <div className="flex items-center px-2">
-                            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                                {currentPage} / {totalPages}
-                            </span>
+                            <option value={10}>10件 / ページ</option>
+                            <option value={20}>20件 / ページ</option>
+                            <option value={50}>50件 / ページ</option>
+                            <option value={100}>100件 / ページ</option>
+                        </select>
+                    </div>
+                    {totalPages > 1 && (
+                        <div className="flex gap-2">
+                            <Button 
+                                variant="secondary" 
+                                size="sm" 
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                            >
+                                前へ
+                            </Button>
+                            <div className="flex items-center px-2">
+                                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                                    {currentPage} / {totalPages}
+                                </span>
+                            </div>
+                            <Button 
+                                variant="secondary" 
+                                size="sm" 
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                            >
+                                次へ
+                            </Button>
                         </div>
-                        <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                        >
-                            次へ
-                        </Button>
-                    </div>
+                    )}
                 </div>
             )}
             
@@ -451,7 +477,7 @@ export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, o
                                 {dataMap.attributes.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                             </Select>
                             <input 
-                                type="text"
+                                type="text" 
                                 value={targetAttrValue}
                                 onChange={(e) => setTargetAttrValue(e.target.value)}
                                 placeholder="値を入力 (例: Red, 64GB)"
@@ -486,7 +512,7 @@ export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, o
             </Modal>
 
             {/* Create/Edit Modal */}
-            {isModalOpen && (
+            {isModalOpen && canCreate && (
                 <SkuModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}

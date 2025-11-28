@@ -5,7 +5,7 @@ import Card from './ui/Card';
 import Input from './ui/Input';
 import Modal from './ui/Modal';
 import { ICONS } from '../constants';
-import type { Attribute, AttributeSet, Category, Series, Sku } from '../types';
+import type { Attribute, AttributeSet, Category, Series, Sku, Permission } from '../types';
 import Badge from './ui/Badge';
 import Select from './ui/Select';
 import { getCategoryPath } from '../utils';
@@ -28,6 +28,7 @@ interface GenericManagerProps {
         attributeSets: AttributeSet[];
         series: Series[];
     };
+    userPermissions: Permission[];
 }
 
 
@@ -228,7 +229,8 @@ const CategoryNode: React.FC<{
     category: Category;
     allCategories: Category[];
     onDelete: (id: string) => void;
-}> = ({ category, allCategories, onDelete }) => {
+    canDelete: boolean;
+}> = ({ category, allCategories, onDelete, canDelete }) => {
     const children = allCategories.filter(c => c.parentId === category.id);
     
     return (
@@ -243,15 +245,17 @@ const CategoryNode: React.FC<{
                     {category.name}
                 </span>
                 <div className="flex items-center gap-2">
-                    <Button onClick={() => onDelete(category.id)} variant="danger" size="sm">
-                        {ICONS.trash}
-                    </Button>
+                    {canDelete && (
+                        <Button onClick={() => onDelete(category.id)} variant="danger" size="sm">
+                            {ICONS.trash}
+                        </Button>
+                    )}
                 </div>
             </div>
             {children.length > 0 && (
                 <div className="ml-6 mt-2 pl-4 border-l-2 border-slate-300 dark:border-slate-600">
                     {children.map(child => (
-                        <CategoryNode key={child.id} category={child} allCategories={allCategories} onDelete={onDelete} />
+                        <CategoryNode key={child.id} category={child} allCategories={allCategories} onDelete={onDelete} canDelete={canDelete} />
                     ))}
                 </div>
             )}
@@ -265,7 +269,7 @@ interface AttributeFilter {
     value: string;
 }
 
-export default function GenericManager({ title, items, onAdd, onDelete, onUpdateAttributeSet, onUpdateSeries, dataMap }: GenericManagerProps) {
+export default function GenericManager({ title, items, onAdd, onDelete, onUpdateAttributeSet, onUpdateSeries, dataMap, userPermissions }: GenericManagerProps) {
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [newItemName, setNewItemName] = useState('');
 
@@ -280,6 +284,11 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
     const [attributeFilters, setAttributeFilters] = useState<AttributeFilter[]>([]);
     const [targetAttrId, setTargetAttrId] = useState('');
     const [targetAttrValue, setTargetAttrValue] = useState('');
+
+    // Permissions
+    const canCreate = userPermissions.includes('MASTER_CREATE');
+    const canEdit = userPermissions.includes('MASTER_EDIT');
+    const canDelete = userPermissions.includes('MASTER_DELETE');
 
     const handleSaveItem = () => {
         if (newItemName.trim()) {
@@ -342,9 +351,11 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
             {items.map(item => (
                 <Card key={item.id} className="flex justify-between items-center">
                     <span className="font-semibold text-slate-800 dark:text-white">{item.name}</span>
-                    <Button onClick={() => onDelete(item.id)} variant="danger" size="sm">
-                        {ICONS.trash}
-                    </Button>
+                    {canDelete && (
+                        <Button onClick={() => onDelete(item.id)} variant="danger" size="sm">
+                            {ICONS.trash}
+                        </Button>
+                    )}
                 </Card>
             ))}
         </div>
@@ -357,7 +368,7 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
         return (
             <div className="space-y-2">
                 {rootCategories.map(root => (
-                    <CategoryNode key={root.id} category={root} allCategories={categories} onDelete={onDelete} />
+                    <CategoryNode key={root.id} category={root} allCategories={categories} onDelete={onDelete} canDelete={canDelete} />
                 ))}
             </div>
         );
@@ -372,7 +383,7 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                         <div>
                             <div className="flex justify-between items-start mb-2">
                                 <span className="font-semibold text-lg text-slate-800 dark:text-white">{set.name}</span>
-                                <Button onClick={() => onDelete(set.id)} variant="danger" size="sm">{ICONS.trash}</Button>
+                                {canDelete && <Button onClick={() => onDelete(set.id)} variant="danger" size="sm">{ICONS.trash}</Button>}
                             </div>
                             <div className="space-y-2 mt-4">
                                 <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400">属性:</h4>
@@ -387,9 +398,11 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                                 )}
                             </div>
                         </div>
-                        <Button onClick={() => openAttributeModal(set)} variant="secondary" size="sm" className="w-full mt-4">
-                            属性を編集
-                        </Button>
+                        {canEdit && (
+                            <Button onClick={() => openAttributeModal(set)} variant="secondary" size="sm" className="w-full mt-4">
+                                属性を編集
+                            </Button>
+                        )}
                     </Card>
                 );
             })}
@@ -480,10 +493,10 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                     </div>
                 )}
 
-                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden border border-zinc-200 dark:border-zinc-700">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
-                            <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                            <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400 whitespace-nowrap">
                                 <tr>
                                     <th scope="col" className="px-6 py-3">画像</th>
                                     <th scope="col" className="px-6 py-3">名前</th>
@@ -492,7 +505,7 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                                     <th scope="col" className="px-6 py-3">操作</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700">
                                 {seriesItems.length === 0 ? (
                                     <tr><td colSpan={5} className="px-6 py-8 text-center">条件に一致するシリーズはありません</td></tr>
                                 ) : (
@@ -501,35 +514,35 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                                             dataMap?.attributeSets.find(as => as.id === setId)?.attributeIds || []
                                         );
                                         return (
-                                            <tr key={series.id} className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600">
-                                                <td className="px-6 py-4">
+                                            <tr key={series.id} className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap">
                                                     {series.imageUrl ? (
-                                                        <img src={series.imageUrl} alt={series.name} className="w-12 h-12 object-cover rounded-md" />
+                                                        <img src={series.imageUrl} alt={series.name} className="w-10 h-10 object-cover rounded-md border border-zinc-200 dark:border-zinc-700" />
                                                     ) : (
-                                                        <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-md flex items-center justify-center text-slate-400">
+                                                        <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-md flex items-center justify-center text-slate-400">
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                                                         </div>
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{series.name}</td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {series.categoryIds.map(id => <Badge key={id}>{getCategoryPath(id, dataMap?.categories || [])}</Badge>)}
+                                                <td className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{series.name}</td>
+                                                <td className="px-6 py-4 max-w-xs">
+                                                    <div className="flex gap-1 overflow-x-auto no-scrollbar">
+                                                        {series.categoryIds.map(id => <Badge key={id} className="whitespace-nowrap">{getCategoryPath(id, dataMap?.categories || [])}</Badge>)}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex flex-wrap gap-1">
+                                                <td className="px-6 py-4 max-w-xs">
+                                                    <div className="flex gap-1 overflow-x-auto no-scrollbar">
                                                         {allAttributeIds.map(attrId => (
-                                                            <Badge key={attrId} color="green">
+                                                            <Badge key={attrId} color="green" className="whitespace-nowrap">
                                                                 {dataMap?.attributes.find(a => a.id === attrId)?.name}: {series.attributeValues[attrId] || 'N/A'}
                                                             </Badge>
                                                         ))}
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
+                                                <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center gap-2">
-                                                        <Button onClick={() => openSeriesEdit(series)} variant="secondary" size="sm">編集</Button>
-                                                        <Button onClick={() => onDelete(series.id)} variant="danger" size="sm">{ICONS.trash}</Button>
+                                                        {canEdit && <Button onClick={() => openSeriesEdit(series)} variant="secondary" size="sm">編集</Button>}
+                                                        {canDelete && <Button onClick={() => onDelete(series.id)} variant="danger" size="sm">{ICONS.trash}</Button>}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -570,7 +583,7 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                                     {dataMap?.attributes.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                                 </Select>
                                 <input 
-                                    type="text"
+                                    type="text" 
                                     value={targetAttrValue}
                                     onChange={(e) => setTargetAttrValue(e.target.value)}
                                     placeholder="値を入力"
@@ -620,10 +633,12 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <h1 className="text-3xl font-bold text-slate-800 dark:text-white">{title}</h1>
-                <Button onClick={() => title === 'シリーズ' ? openSeriesCreate() : setIsItemModalOpen(true)}>
-                    {ICONS.plus}
-                    新規{singularTitle}を追加
-                </Button>
+                {canCreate && (
+                    <Button onClick={() => title === 'シリーズ' ? openSeriesCreate() : setIsItemModalOpen(true)}>
+                        {ICONS.plus}
+                        新規{singularTitle}を追加
+                    </Button>
+                )}
             </div>
             
             {(items.length > 0 || title === 'シリーズ') ? renderContent() : (

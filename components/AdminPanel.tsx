@@ -17,14 +17,62 @@ interface AdminPanelProps {
     onDeleteRole: (roleId: string) => void;
 }
 
-const PERMISSION_LABELS: Record<Permission, string> = {
-    'ACCESS_SKU': 'SKU/マスタ管理',
-    'ACCESS_OMS': '在庫/発注 (OMS)',
-    'ACCESS_EC': 'ECストア管理',
-    'ACCESS_CATALOG': 'Webカタログ',
-    'ACCESS_PROJECT': '企画プロジェクト',
-    'ACCESS_ADMIN': 'システム管理 (Admin)'
-};
+const PERMISSION_GROUPS = [
+    {
+        label: 'Master Data System',
+        permissions: [
+            { key: 'MASTER_VIEW', label: '閲覧 (View)' },
+            { key: 'MASTER_CREATE', label: '作成 (Create)' },
+            { key: 'MASTER_EDIT', label: '編集 (Edit)' },
+            { key: 'MASTER_DELETE', label: '削除 (Delete)' },
+            { key: 'MASTER_IMPORT', label: 'インポート (Import)' },
+            { key: 'MASTER_EXPORT', label: 'エクスポート (Channel Export)' },
+        ]
+    },
+    {
+        label: 'Order Management System (OMS)',
+        permissions: [
+            { key: 'OMS_VIEW', label: '閲覧 (View)' },
+            { key: 'OMS_ORDER_CREATE', label: '発注作成 (Create Order)' },
+        ]
+    },
+    {
+        label: 'EC System',
+        permissions: [
+            { key: 'EC_VIEW', label: '閲覧 (View)' },
+            { key: 'EC_MANAGE', label: '管理 (Manage)' },
+        ]
+    },
+    {
+        label: 'Creative System (POP)',
+        permissions: [
+            { key: 'CREATIVE_VIEW', label: '閲覧 (View)' },
+            { key: 'CREATIVE_EDIT', label: '編集 (Edit)' },
+        ]
+    },
+    {
+        label: 'Web Catalog System',
+        permissions: [
+            { key: 'CATALOG_VIEW', label: '閲覧 (View)' },
+            { key: 'CATALOG_EDIT', label: '編集 (Edit)' },
+        ]
+    },
+    {
+        label: 'Project System',
+        permissions: [
+            { key: 'PROJECT_VIEW', label: '閲覧 (View)' },
+            { key: 'PROJECT_CREATE', label: '作成 (Create)' },
+            { key: 'PROJECT_EDIT', label: '編集/メンバー追加 (Edit)' },
+        ]
+    },
+    {
+        label: 'Administration',
+        permissions: [
+            { key: 'ADMIN_VIEW', label: '管理画面アクセス (Access)' },
+            { key: 'ADMIN_MANAGE', label: '全権限管理 (Full Manage)' },
+        ]
+    }
+];
 
 export default function AdminPanel({ users, roles, onUpdateUserRole, onUpdateRole, onCreateRole, onDeleteRole }: AdminPanelProps) {
     const [activeTab, setActiveTab] = useState<'USERS' | 'ROLES'>('USERS');
@@ -164,12 +212,9 @@ export default function AdminPanel({ users, roles, onUpdateUserRole, onUpdateRol
                         <div className="space-y-2 mb-6 flex-1">
                             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">アクセス権限</h4>
                             <div className="flex flex-wrap gap-2">
-                                {role.permissions.map(perm => (
-                                    <span key={perm} className="text-xs px-2 py-1 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-zinc-700">
-                                        {PERMISSION_LABELS[perm]}
-                                    </span>
-                                ))}
-                                {role.permissions.length === 0 && <span className="text-xs text-slate-400 italic">権限なし</span>}
+                                <span className="text-xs text-slate-500 bg-slate-100 dark:bg-zinc-800 px-2 py-1 rounded">
+                                    {role.permissions.length} 権限付与済み
+                                </span>
                             </div>
                         </div>
 
@@ -222,47 +267,59 @@ export default function AdminPanel({ users, roles, onUpdateUserRole, onUpdateRol
                 isOpen={isRoleModalOpen} 
                 onClose={() => setIsRoleModalOpen(false)} 
                 title={editingRole ? 'ロール編集' : '新規ロール作成'}
+                maxWidth="max-w-4xl"
             >
                 <div className="space-y-6">
-                    <Input 
-                        label="ロール名" 
-                        value={tempRoleData.name} 
-                        onChange={(e) => setTempRoleData(prev => ({...prev, name: e.target.value}))} 
-                        placeholder="例: 商品マネージャー"
-                    />
-                    <Input 
-                        label="説明" 
-                        value={tempRoleData.description} 
-                        onChange={(e) => setTempRoleData(prev => ({...prev, description: e.target.value}))} 
-                        placeholder="例: 全ての商品データへのアクセス権限"
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Input 
+                            label="ロール名" 
+                            value={tempRoleData.name} 
+                            onChange={(e) => setTempRoleData(prev => ({...prev, name: e.target.value}))} 
+                            placeholder="例: 商品マネージャー"
+                        />
+                        <Input 
+                            label="説明" 
+                            value={tempRoleData.description} 
+                            onChange={(e) => setTempRoleData(prev => ({...prev, description: e.target.value}))} 
+                            placeholder="例: 全ての商品データへのアクセス権限"
+                        />
+                    </div>
                     
                     <div>
                         <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">権限の割り当て</label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-lg border border-slate-100 dark:border-zinc-800">
-                            {(Object.keys(PERMISSION_LABELS) as Permission[]).map(perm => {
-                                const isEnabled = tempRoleData.permissions.includes(perm);
-                                // Prevent disabling Admin access for the Admin role to avoid lockout
-                                const isLocked = editingRole?.id === 'role_admin' && perm === 'ACCESS_ADMIN';
-                                
-                                return (
-                                    <label key={perm} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isEnabled ? 'bg-white dark:bg-zinc-800 border-blue-200 dark:border-blue-800 shadow-sm' : 'border-transparent hover:bg-white dark:hover:bg-zinc-800'}`}>
-                                        <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${isEnabled ? 'bg-blue-500 border-blue-500' : 'bg-white border-slate-300 dark:bg-zinc-900 dark:border-zinc-600'}`}>
-                                            {isEnabled && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
-                                        </div>
-                                        <input 
-                                            type="checkbox" 
-                                            className="hidden"
-                                            checked={isEnabled}
-                                            disabled={isLocked}
-                                            onChange={() => !isLocked && toggleTempPermission(perm)}
-                                        />
-                                        <span className={`text-sm font-medium ${isEnabled ? 'text-slate-900 dark:text-white' : 'text-slate-500'}`}>
-                                            {PERMISSION_LABELS[perm]}
-                                        </span>
-                                    </label>
-                                )
-                            })}
+                        <div className="space-y-4">
+                            {PERMISSION_GROUPS.map(group => (
+                                <div key={group.label} className="bg-slate-50 dark:bg-zinc-800/50 rounded-lg border border-slate-100 dark:border-zinc-800 overflow-hidden">
+                                    <div className="px-4 py-2 bg-slate-100 dark:bg-zinc-800 border-b border-slate-200 dark:border-zinc-700">
+                                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase">{group.label}</h4>
+                                    </div>
+                                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        {group.permissions.map(perm => {
+                                            const isEnabled = tempRoleData.permissions.includes(perm.key as Permission);
+                                            // Prevent disabling Admin access for the Admin role to avoid lockout
+                                            const isLocked = editingRole?.id === 'role_admin' && perm.key === 'ADMIN_MANAGE';
+                                            
+                                            return (
+                                                <label key={perm.key} className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-all ${isEnabled ? 'bg-white dark:bg-zinc-700 shadow-sm ring-1 ring-blue-500/20' : 'hover:bg-white dark:hover:bg-zinc-700'}`}>
+                                                    <div className={`w-4 h-4 rounded flex items-center justify-center border transition-colors ${isEnabled ? 'bg-blue-500 border-blue-500' : 'bg-white border-slate-300 dark:bg-zinc-900 dark:border-zinc-600'}`}>
+                                                        {isEnabled && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
+                                                    </div>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="hidden"
+                                                        checked={isEnabled}
+                                                        disabled={isLocked}
+                                                        onChange={() => !isLocked && toggleTempPermission(perm.key as Permission)}
+                                                    />
+                                                    <span className={`text-xs font-medium ${isEnabled ? 'text-slate-900 dark:text-white' : 'text-slate-500'}`}>
+                                                        {perm.label}
+                                                    </span>
+                                                </label>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 

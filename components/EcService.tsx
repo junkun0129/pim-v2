@@ -85,14 +85,14 @@ export default function EcService({ skus, series, inventory, ecBranch, customerO
     );
 
     const renderAdmin = () => (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden border border-zinc-200 dark:border-zinc-700">
              <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
                 <h3 className="font-bold text-slate-800 dark:text-white">受注一覧 (発送元: {ecBranch.name})</h3>
                 <div className="text-sm text-slate-500">合計件数: {customerOrders.length}件</div>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
-                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400 whitespace-nowrap">
                         <tr>
                             <th className="px-6 py-3">受注ID</th>
                             <th className="px-6 py-3">注文日時</th>
@@ -103,18 +103,18 @@ export default function EcService({ skus, series, inventory, ecBranch, customerO
                             <th className="px-6 py-3 text-center">ステータス</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700">
                         {customerOrders.length === 0 ? (
                             <tr><td colSpan={7} className="px-6 py-8 text-center">注文はまだありません</td></tr>
                         ) : (
                             customerOrders.map(order => {
                                 const sku = skus.find(s => s.id === order.skuId);
                                 return (
-                                    <tr key={order.id} className="bg-white dark:bg-slate-800 border-b dark:border-slate-700">
-                                        <td className="px-6 py-4 font-mono text-xs">{order.id}</td>
-                                        <td className="px-6 py-4">{order.orderDate}</td>
-                                        <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{order.customerName}</td>
-                                        <td className="px-6 py-4">
+                                    <tr key={order.id} className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+                                        <td className="px-6 py-4 font-mono text-xs whitespace-nowrap">{order.id}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">{order.orderDate}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{order.customerName}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <div className="ml-2">
                                                     <div className="text-slate-900 dark:text-white">{sku?.name || order.skuId}</div>
@@ -122,9 +122,9 @@ export default function EcService({ skus, series, inventory, ecBranch, customerO
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-right">{order.quantity}</td>
-                                        <td className="px-6 py-4 text-right font-medium">¥{order.totalPrice.toLocaleString()}</td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-6 py-4 text-right whitespace-nowrap">{order.quantity}</td>
+                                        <td className="px-6 py-4 text-right font-medium whitespace-nowrap">¥{order.totalPrice.toLocaleString()}</td>
+                                        <td className="px-6 py-4 text-center whitespace-nowrap">
                                             <Badge color={order.status === 'SHIPPED' ? 'blue' : order.status === 'DELIVERED' ? 'green' : 'gray'}>
                                                 {order.status}
                                             </Badge>
@@ -141,7 +141,7 @@ export default function EcService({ skus, series, inventory, ecBranch, customerO
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-700">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                         {ICONS.globe}

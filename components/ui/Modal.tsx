@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 
@@ -6,9 +7,10 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children?: React.ReactNode;
+    maxWidth?: string;
 }
 
-export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }: ModalProps) {
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -33,7 +35,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
                 onClick={onClose}
             ></div>
             <div 
-                className="relative bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col transform transition-all animate-fade-in-up border border-zinc-200 dark:border-zinc-800"
+                className={`relative bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full ${maxWidth} max-h-[90vh] flex flex-col transform transition-all animate-fade-in-up border border-zinc-200 dark:border-zinc-800`}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 shrink-0">

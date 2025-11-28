@@ -40,10 +40,10 @@ export default function SkuTable({
     const getAttributeName = (id: string) => dataMap.attributes.find(a => a.id === id)?.name || '不明';
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden border border-zinc-200 dark:border-zinc-700">
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
-                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400 whitespace-nowrap">
                         <tr>
                             <th scope="col" className="p-4 w-4">
                                 {onToggleAll && (
@@ -69,7 +69,7 @@ export default function SkuTable({
                             <th scope="col" className="px-6 py-3">操作</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700">
                         {skus.length === 0 ? (
                             <tr>
                                 <td colSpan={9} className="text-center py-10 text-slate-500 dark:text-slate-400">
@@ -92,11 +92,11 @@ export default function SkuTable({
                                 <tr 
                                     key={sku.id} 
                                     className={`
-                                        border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600
+                                        hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors
                                         ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-slate-800'}
                                     `}
                                 >
-                                    <td className="w-4 p-4">
+                                    <td className="w-4 p-4 whitespace-nowrap">
                                         {onToggleSelect && (
                                             <div className="flex items-center">
                                                 <input 
@@ -110,12 +110,12 @@ export default function SkuTable({
                                             </div>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                         {imageUrl ? (
-                                            <img src={imageUrl} alt={sku.name} className="w-12 h-12 object-cover rounded-md" />
+                                            <img src={imageUrl} alt={sku.name} className="w-10 h-10 object-cover rounded-md border border-zinc-200 dark:border-zinc-700" />
                                         ) : (
-                                            <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-md flex items-center justify-center text-slate-400">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                            <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-md flex items-center justify-center text-slate-400">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                                             </div>
                                         )}
                                     </td>
@@ -124,32 +124,33 @@ export default function SkuTable({
                                             {sku.name}
                                         </button>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex flex-col">
-                                            <span>{sku.skuId}</span>
+                                            <span className="font-mono">{sku.skuId}</span>
                                             {sku.barcode && <span className="text-xs text-slate-400 font-mono mt-0.5">{sku.barcode}</span>}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">
+                                    <td className="px-6 py-4 font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                                         {sku.price ? `¥${sku.price.toLocaleString()}` : '-'}
                                     </td>
-                                    <td className="px-6 py-4">{getSeriesName(sku.seriesId)}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-wrap gap-1">
-                                            {sku.categoryIds.map(catId => <Badge key={catId}>{getCategoryPath(catId, dataMap.categories)}</Badge>)}
+                                    <td className="px-6 py-4 whitespace-nowrap">{getSeriesName(sku.seriesId)}</td>
+                                    <td className="px-6 py-4 max-w-xs">
+                                        {/* Use flex-nowrap and overflow to prevent height jumping */}
+                                        <div className="flex gap-1 overflow-x-auto no-scrollbar mask-linear-fade">
+                                            {sku.categoryIds.map(catId => <Badge key={catId} className="whitespace-nowrap">{getCategoryPath(catId, dataMap.categories).split('>').pop()}</Badge>)}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-wrap gap-1">
+                                    <td className="px-6 py-4 max-w-xs">
+                                        <div className="flex gap-1 overflow-x-auto no-scrollbar">
                                             {allAttributeIds.map(attrId => (
-                                                <Badge key={attrId} color="green">
+                                                <Badge key={attrId} color="green" className="whitespace-nowrap">
                                                     {getAttributeName(attrId)}: {attributeSource.attributeValues[attrId] || 'N/A'}
                                                 </Badge>
                                             ))}
-                                            {series && allAttributeIds.length > 0 && <Badge color="purple">継承</Badge>}
+                                            {series && allAttributeIds.length > 0 && <Badge color="purple" className="whitespace-nowrap">継承</Badge>}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2">
                                             <Button onClick={() => onEdit(sku)} variant="secondary" size="sm">
                                                 編集

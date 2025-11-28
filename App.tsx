@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder, WebCatalog, Project, Complaint, Driver, StockTransfer, User, Role } from './types';
+import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder, WebCatalog, Project, Complaint, Driver, StockTransfer, User, Role, SkuDraft, ExportChannel, DraftStatus } from './types';
 import Sidebar from './components/Sidebar';
 import SkuView from './components/SkuView';
 import GenericManager from './components/GenericManager';
@@ -10,8 +10,9 @@ import EcService from './components/EcService';
 import CreativeStudio from './components/CreativeStudio';
 import WebCatalogManager from './components/WebCatalogManager';
 import ProjectManager from './components/ProjectManager';
+import ChannelExportManager from './components/ChannelExportManager'; // New Import
 import AdminPanel from './components/AdminPanel';
-import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS, MOCK_CATALOGS, MOCK_PROJECTS, MOCK_COMPLAINTS, MOCK_DRIVERS, MOCK_TRANSFERS, MOCK_USERS, MOCK_ROLES } from './mockData';
+import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS, MOCK_CATALOGS, MOCK_PROJECTS, MOCK_COMPLAINTS, MOCK_DRIVERS, MOCK_TRANSFERS, MOCK_USERS, MOCK_ROLES, MOCK_DRAFTS, MOCK_EXPORT_CHANNELS } from './mockData';
 import { APP_CONFIG } from './config';
 import { api } from './api';
 import { ToastContainer, ToastMessage, ToastType } from './components/ui/Toast';
@@ -40,6 +41,10 @@ export default function App() {
 
     // New Project State
     const [projects, setProjects] = useState<Project[]>([]);
+    const [drafts, setDrafts] = useState<SkuDraft[]>([]); // New Drafts State
+
+    // New Export State
+    const [exportChannels, setExportChannels] = useState<ExportChannel[]>([]);
     
     // User & Role State
     const [users, setUsers] = useState<User[]>([]);
@@ -89,6 +94,8 @@ export default function App() {
             setTransfers(MOCK_TRANSFERS);
             setCatalogs(MOCK_CATALOGS);
             setProjects(MOCK_PROJECTS);
+            setDrafts(MOCK_DRAFTS);
+            setExportChannels(MOCK_EXPORT_CHANNELS);
             setUsers(MOCK_USERS);
             setRoles(MOCK_ROLES);
 
@@ -438,6 +445,33 @@ export default function App() {
         addToast('success', 'プロジェクトを作成しました');
     };
 
+    const handleAddProjectMember = (projectId: string, userId: string) => {
+        setProjects(prev => prev.map(p => {
+            if (p.id === projectId && !p.memberIds.includes(userId)) {
+                return { ...p, memberIds: [...p.memberIds, userId] };
+            }
+            return p;
+        }));
+        addToast('success', 'メンバーを追加しました');
+    };
+
+    // --- Project Drafts Handlers ---
+    const handleCreateDraft = (data: Omit<SkuDraft, 'id' | 'createdAt' | 'authorId'>) => {
+        const newDraft: SkuDraft = {
+            ...data,
+            id: `draft-${Date.now()}`,
+            createdAt: new Date().toISOString().split('T')[0],
+            authorId: currentUserId
+        };
+        setDrafts([newDraft, ...drafts]);
+        addToast('success', 'SKUドラフトを起案しました');
+    };
+
+    const handleUpdateDraftStatus = (draftId: string, status: DraftStatus) => {
+        setDrafts(prev => prev.map(d => d.id === draftId ? { ...d, status } : d));
+        addToast('success', `ステータスを更新しました: ${status}`);
+    };
+
     // --- OMS: Messages, Logistics, Transfer ---
     const handleReplyComplaint = (id: string, response: string) => {
         setComplaints(prev => prev.map(c => c.id === id ? { ...c, response, status: 'RESOLVED' } : c));
@@ -489,6 +523,25 @@ export default function App() {
         addToast('success', '在庫移動処理が完了しました');
     };
 
+    // --- Channel Export Handlers ---
+    const handleAddChannel = (channel: ExportChannel) => {
+        setExportChannels([...exportChannels, channel]);
+        addToast('success', 'エクスポートチャネルを追加しました');
+    };
+
+    const handleUpdateChannel = (channel: ExportChannel) => {
+        setExportChannels(prev => prev.map(c => c.id === channel.id ? channel : c));
+        addToast('success', 'チャネル設定を更新しました');
+    };
+
+    const handleDeleteChannel = (id: string) => {
+        if(window.confirm('このチャネル設定を削除しますか？')) {
+            setExportChannels(prev => prev.filter(c => c.id !== id));
+            addToast('info', 'チャネル設定を削除しました');
+        }
+    };
+
+
     // --- Admin: User & Role Management ---
     const handleUpdateUserRole = (userId: string, roleId: string) => {
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, roleId } : u));
@@ -518,7 +571,7 @@ export default function App() {
 
     const renderContent = () => {
         if (activeView === 'ADMIN') {
-            if (!hasAccess('ACCESS_ADMIN')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+            if (!hasAccess('ADMIN_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
             return <AdminPanel 
                 users={users} 
                 roles={roles} 
@@ -530,27 +583,54 @@ export default function App() {
         }
 
         if (activeView === 'PROJECTS') {
-            if (!hasAccess('ACCESS_PROJECT')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
-            return <ProjectManager projects={projects} onCreateProject={handleCreateProject} currentUserId={currentUserId} />;
+            if (!hasAccess('PROJECT_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+            return <ProjectManager 
+                projects={projects} 
+                onCreateProject={handleCreateProject}
+                onAddMember={handleAddProjectMember}
+                currentUserId={currentUserId}
+                userRole={currentUserRole}
+                users={users}
+                drafts={drafts}
+                onCreateDraft={handleCreateDraft}
+                onUpdateDraftStatus={handleUpdateDraftStatus}
+            />;
         }
 
         if (activeView === 'CATALOG') {
-            if (!hasAccess('ACCESS_CATALOG')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+            if (!hasAccess('CATALOG_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
             return <WebCatalogManager catalogs={catalogs} skus={skus} categories={categories} series={series} onSaveCatalog={handleSaveCatalog} onDeleteCatalog={handleDeleteCatalog} />;
         }
 
+        if (activeView === 'CHANNEL_EXPORT') {
+             if (!hasAccess('MASTER_EXPORT')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+             return (
+                <ChannelExportManager 
+                    skus={skus}
+                    series={series}
+                    categories={categories}
+                    attributes={attributes}
+                    attributeSets={attributeSets}
+                    channels={exportChannels}
+                    onAddChannel={handleAddChannel}
+                    onUpdateChannel={handleUpdateChannel}
+                    onDeleteChannel={handleDeleteChannel}
+                />
+             );
+        }
+
         if (activeView === 'CREATIVE') {
-            if (!hasAccess('ACCESS_OMS')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+            if (!hasAccess('CREATIVE_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
             return <CreativeStudio skus={skus} branches={branches} onSaveAsset={handleSaveAsset} />;
         }
 
         if (activeView === 'EC') {
-            if (!hasAccess('ACCESS_EC')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+            if (!hasAccess('EC_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
             return <EcService skus={skus} series={series} inventory={inventory} ecBranch={branches.find(b => b.type === 'EC')} customerOrders={customerOrders} onPlaceOrder={handleEcOrder} />;
         }
 
         if (activeView === 'Orders') {
-             if (!hasAccess('ACCESS_OMS')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+             if (!hasAccess('OMS_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
              return (
                 <OrderManager 
                     skus={skus} 
@@ -580,13 +660,14 @@ export default function App() {
                         sku={sku} 
                         dataMap={{ series, categories, attributes, attributeSets }} 
                         onBack={() => { setSelectedSkuId(null); setActiveView('SKUs'); }} 
+                        onEdit={hasAccess('MASTER_EDIT') ? handleUpdateSku : undefined}
                     />
                 );
             }
         }
         
         if (activeView === 'SKUs') {
-             if (!hasAccess('ACCESS_SKU')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+             if (!hasAccess('MASTER_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
              return (
                 <SkuView 
                     skus={skus} 
@@ -596,11 +677,12 @@ export default function App() {
                     deleteSku={handleDeleteSku}
                     onViewSku={(id) => { setSelectedSkuId(id); setActiveView('SKU_DETAIL'); }}
                     onImportSkus={handleImportSkus}
+                    userPermissions={currentUserRole?.permissions || []}
                 />
             );
         }
 
-        if (!hasAccess('ACCESS_SKU')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+        if (!hasAccess('MASTER_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
 
         return (
             <GenericManager
@@ -627,6 +709,7 @@ export default function App() {
                     activeView === 'Categories' ? handleDeleteCategory :
                     activeView === 'Attributes' ? handleDeleteAttribute : handleDeleteAttributeSet
                 }
+                userPermissions={currentUserRole?.permissions || []}
             />
         );
     };

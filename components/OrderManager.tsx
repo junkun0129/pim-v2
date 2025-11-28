@@ -168,10 +168,10 @@ export default function OrderManager({
     // --- Render Tabs ---
 
     const renderInventoryTab = () => (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden border border-zinc-200 dark:border-zinc-700">
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
-                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
+                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400 whitespace-nowrap">
                         <tr>
                             <th className="px-6 py-3">商品画像</th>
                             <th className="px-6 py-3">SKU名</th>
@@ -181,24 +181,24 @@ export default function OrderManager({
                             <th className="px-6 py-3 text-center">アクション</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700">
                         {branchInventoryDisplay.map((item) => (
-                            <tr key={item.id} className="bg-white dark:bg-slate-800 border-b dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600">
-                                <td className="px-6 py-4">
+                            <tr key={item.id} className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-600">
+                                <td className="px-6 py-4 whitespace-nowrap">
                                      {item.imageUrl ? (
-                                        <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded-md" />
+                                        <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded-md border border-zinc-200 dark:border-zinc-700" />
                                     ) : (
                                         <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-md flex items-center justify-center text-slate-400 text-xs">No Img</div>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                                <td className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">
                                     {item.name}
                                 </td>
-                                <td className="px-6 py-4">{item.skuId}</td>
-                                <td className="px-6 py-4 text-right font-bold text-lg">
+                                <td className="px-6 py-4 whitespace-nowrap font-mono">{item.skuId}</td>
+                                <td className="px-6 py-4 text-right font-bold text-lg whitespace-nowrap">
                                     {item.quantity}
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 whitespace-nowrap">
                                     {item.quantity === 0 ? (
                                         <Badge color="gray">在庫なし</Badge>
                                     ) : item.status === 'LOW' ? (
@@ -207,7 +207,7 @@ export default function OrderManager({
                                         <Badge color="green">在庫あり</Badge>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 text-center">
+                                <td className="px-6 py-4 text-center whitespace-nowrap">
                                     <Button size="sm" onClick={() => handleOpenOrderModal(item.id)}>
                                         <span className="flex items-center">
                                             {ICONS.clipboard}
@@ -361,31 +361,33 @@ export default function OrderManager({
                 <Button onClick={() => setIsTransferModalOpen(true)}>{ICONS.plus} 在庫移動指示</Button>
             </div>
 
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
-                    <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400">
-                        <tr>
-                            <th className="px-6 py-3">日付</th>
-                            <th className="px-6 py-3">移動元</th>
-                            <th className="px-6 py-3">移動先</th>
-                            <th className="px-6 py-3">商品</th>
-                            <th className="px-6 py-3">数量</th>
-                            <th className="px-6 py-3">ステータス</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {branchTransfers.map(tr => (
-                            <tr key={tr.id} className="bg-white dark:bg-slate-800 border-b dark:border-slate-700">
-                                <td className="px-6 py-4">{tr.date}</td>
-                                <td className="px-6 py-4">{getBranchName(tr.fromBranchId)}</td>
-                                <td className="px-6 py-4">{getBranchName(tr.toBranchId)}</td>
-                                <td className="px-6 py-4">{getSkuName(tr.skuId)}</td>
-                                <td className="px-6 py-4 font-bold">{tr.quantity}</td>
-                                <td className="px-6 py-4"><Badge color="green">{tr.status}</Badge></td>
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left text-slate-500 dark:text-slate-400">
+                        <thead className="text-xs text-slate-700 uppercase bg-slate-50 dark:bg-slate-700 dark:text-slate-400 whitespace-nowrap">
+                            <tr>
+                                <th className="px-6 py-3">日付</th>
+                                <th className="px-6 py-3">移動元</th>
+                                <th className="px-6 py-3">移動先</th>
+                                <th className="px-6 py-3">商品</th>
+                                <th className="px-6 py-3">数量</th>
+                                <th className="px-6 py-3">ステータス</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-700">
+                            {branchTransfers.map(tr => (
+                                <tr key={tr.id} className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-600">
+                                    <td className="px-6 py-4 whitespace-nowrap">{tr.date}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{getBranchName(tr.fromBranchId)}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{getBranchName(tr.toBranchId)}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{getSkuName(tr.skuId)}</td>
+                                    <td className="px-6 py-4 font-bold whitespace-nowrap">{tr.quantity}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap"><Badge color="green">{tr.status}</Badge></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
@@ -393,7 +395,7 @@ export default function OrderManager({
     return (
         <div className="space-y-6">
             {/* Header / Branch Selector */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 rounded-lg shadow">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 rounded-lg shadow border border-zinc-200 dark:border-zinc-700">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                         {ICONS.shop}
