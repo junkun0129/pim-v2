@@ -242,10 +242,13 @@ export const MOCK_CATALOGS: WebCatalog[] = [
         name: '新生活応援フェア',
         description: '春の新生活に向けたおすすめ家電・日用品特集',
         themeColor: '#10b981', // Emerald
+        fontFamily: 'SANS',
+        cornerStyle: 'ROUNDED',
         status: 'PUBLISHED',
         lastUpdated: '2023-11-01',
         sections: [
             { id: 'sec1', type: 'HERO', title: 'Start New Life', subtitle: '新しい生活、新しい道具と。', imageUrl: 'https://placehold.co/1200x400/10b981/ffffff?text=New+Life+Fair' },
+            { id: 'sec-txt', type: 'RICH_TEXT', title: '私たちの想い', content: '快適な生活空間は、心も豊かにします。厳選されたアイテムで、あなたの毎日をサポートします。' },
             { id: 'sec2', type: 'GRID_CATEGORY', title: '掃除道具コレクション', targetId: 'cat2' },
             { id: 'sec3', type: 'SPOTLIGHT_SKU', title: '今月のピックアップ', targetId: 'sku1' },
         ]
@@ -255,11 +258,29 @@ export const MOCK_CATALOGS: WebCatalog[] = [
         name: 'Apple製品特集',
         description: '最新のiPhone, Macをご紹介',
         themeColor: '#111827', // Gray-900
+        fontFamily: 'SANS',
+        cornerStyle: 'ROUNDED',
         status: 'DRAFT',
         lastUpdated: '2023-11-05',
         sections: [
             { id: 'sec1', type: 'HERO', title: 'Designed by Apple', subtitle: '革新的なテクノロジーをあなたの手に。', imageUrl: 'https://placehold.co/1200x400/111827/ffffff?text=Apple+Special' },
             { id: 'sec2', type: 'GRID_CATEGORY', title: 'スマートフォン', targetId: 'cat5' },
+        ]
+    },
+    {
+        id: 'cat-web-3',
+        name: 'Premium Kitchen (Demo)',
+        description: '高級感のあるキッチン用品カタログ',
+        themeColor: '#78350f', // Amber-900
+        fontFamily: 'SERIF', // Showcase Serif
+        cornerStyle: 'SHARP', // Showcase Sharp corners
+        logoUrl: 'https://placehold.co/100x100/78350f/ffffff?text=PK',
+        status: 'PUBLISHED',
+        lastUpdated: '2023-11-25',
+        sections: [
+            { id: 'sec1', type: 'HERO', title: 'The Art of Cooking', subtitle: '最高の一皿は、最高の道具から。', imageUrl: 'https://placehold.co/1200x500/1c1917/ffffff?text=Premium+Kitchen' },
+            { id: 'sec-video', type: 'VIDEO', title: 'Brand Story', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4' },
+            { id: 'sec2', type: 'GRID_CATEGORY', title: 'Chef\'s Selection', targetId: 'cat8' }
         ]
     }
 ];
