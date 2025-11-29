@@ -137,6 +137,7 @@ export interface DesignElement {
     text?: string;
     fontSize?: number;
     fontWeight?: string;
+    fontFamily?: string; // New: Font Family support
     imageUrl?: string;
     // Template markers
     isSkuName?: boolean;
@@ -149,6 +150,8 @@ export interface PopTemplate {
     id: string;
     name: string;
     description: string;
+    width?: number; // New: Template Dimensions
+    height?: number; // New: Template Dimensions
     backgroundColor: string;
     elements: Omit<DesignElement, 'id'>[];
 }

@@ -5,10 +5,12 @@ import Card from './ui/Card';
 import Button from './ui/Button';
 import Select from './ui/Select';
 import Input from './ui/Input';
+import Modal from './ui/Modal';
 import { ICONS } from '../constants';
 import { MOCK_POP_TEMPLATES } from '../mockData';
 
 declare const JsBarcode: any;
+declare const jspdf: any;
 
 interface CreativeStudioProps {
     skus: Sku[];
@@ -37,13 +39,22 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
     const [paperColor, setPaperColor] = useState('#ffffff');
     const [overridePrice, setOverridePrice] = useState<number>(0);
     
-    const svgRef = useRef<SVGSVGElement>(null);
+    // Canvas State
+    const [canvasWidth, setCanvasWidth] = useState(800);
+    const [canvasHeight, setCanvasHeight] = useState(565); // A4 Landscape ratio (approx)
 
-    const CANVAS_WIDTH = 800;
-    const CANVAS_HEIGHT = 565; // A4 aspect ratio roughly (1.414)
+    // Template Saving State
+    const [customTemplates, setCustomTemplates] = useState<PopTemplate[]>([]);
+    const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = useState(false);
+    const [newTemplateName, setNewTemplateName] = useState('');
+    const [newTemplateDesc, setNewTemplateDesc] = useState('');
+
+    const svgRef = useRef<SVGSVGElement>(null);
 
     const selectedSku = skus.find(s => s.id === selectedSkuId);
     const selectedBranch = branches.find(b => b.id === selectedBranchId);
+
+    const allTemplates = [...MOCK_POP_TEMPLATES, ...customTemplates];
 
     // Filter assets for the current SKU to show history
     const skuAssets = selectedSku?.assets?.filter(a => a.type === 'DESIGN') || [];
@@ -143,6 +154,7 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
             baseElement.fontSize = 24;
             baseElement.fill = '#000000';
             baseElement.fontWeight = 'normal';
+            baseElement.fontFamily = 'sans-serif';
         }
 
         setElements(prev => [...prev, baseElement]);
@@ -160,6 +172,8 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
         if (elements.length > 0 && !window.confirm("キャンバスをクリアしてテンプレートを適用しますか？")) return;
 
         setPaperColor(template.backgroundColor);
+        if (template.width) setCanvasWidth(template.width);
+        if (template.height) setCanvasHeight(template.height);
         
         // Map template elements to new DesignElements with IDs
         const newElements: DesignElement[] = template.elements.map(tmplEl => {
@@ -202,6 +216,29 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
         setAssetName(`${selectedSku.name} - ${template.name}`);
     };
 
+    const handleSaveTemplate = () => {
+        const newTemplate: PopTemplate = {
+            id: `tmpl-custom-${Date.now()}`,
+            name: newTemplateName,
+            description: newTemplateDesc,
+            backgroundColor: paperColor,
+            width: canvasWidth,
+            height: canvasHeight,
+            // Strip IDs for template
+            elements: elements.map(({ id, ...rest }) => rest)
+        };
+        setCustomTemplates([...customTemplates, newTemplate]);
+        setIsSaveTemplateModalOpen(false);
+        setNewTemplateName('');
+        setNewTemplateDesc('');
+    };
+
+    const handleDeleteTemplate = (id: string) => {
+        if(window.confirm('このテンプレートを削除しますか？')) {
+            setCustomTemplates(prev => prev.filter(t => t.id !== id));
+        }
+    };
+
     // --- POP Specific Helpers ---
 
     const addSkuName = () => {
@@ -211,6 +248,7 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
             fontSize: 28,
             fontWeight: 'bold',
             fill: '#1e293b', 
+            fontFamily: 'sans-serif',
             x: 20,
             y: 20
         });
@@ -222,6 +260,7 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
             fontSize: 64,
             fontWeight: 'bold',
             fill: '#dc2626', 
+            fontFamily: '"RocknRoll One", sans-serif',
             x: 20,
             y: 100
         });
@@ -283,13 +322,14 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
         setSelectedElementId(null);
     };
 
-    const handleSave = () => {
-        if (!selectedSkuId || !svgRef.current) return;
+    // --- Output Logic ---
+
+    const getImageDataUrl = async (type: 'image/png' | 'image/jpeg' = 'image/png'): Promise<string | null> => {
+        if (!svgRef.current) return null;
 
         const serializer = new XMLSerializer();
         let source = serializer.serializeToString(svgRef.current);
 
-        // Namespace fixes for browser compatibility
         if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
             source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
         }
@@ -300,26 +340,77 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
         const svgBlob = new Blob([source], {type:"image/svg+xml;charset=utf-8"});
         const url = URL.createObjectURL(svgBlob);
         
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = CANVAS_WIDTH;
-            canvas.height = CANVAS_HEIGHT;
-            const ctx = canvas.getContext('2d');
-            if(ctx) {
-                // Fill background
-                ctx.fillStyle = paperColor;
-                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-                
-                ctx.drawImage(img, 0, 0);
-                const pngDataUrl = canvas.toDataURL('image/png');
-                
-                const finalName = selectedBranch ? `[${selectedBranch.name}] ${assetName}` : assetName;
-                onSaveAsset(selectedSkuId, finalName, pngDataUrl);
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+                const ctx = canvas.getContext('2d');
+                if(ctx) {
+                    // Fill background
+                    ctx.fillStyle = paperColor;
+                    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+                    
+                    ctx.drawImage(img, 0, 0);
+                    const dataUrl = canvas.toDataURL(type);
+                    URL.revokeObjectURL(url);
+                    resolve(dataUrl);
+                } else {
+                    URL.revokeObjectURL(url);
+                    resolve(null);
+                }
+            };
+            img.src = url;
+        });
+    };
+
+    const handleSave = async () => {
+        if (!selectedSkuId) return;
+        const pngDataUrl = await getImageDataUrl();
+        if (pngDataUrl) {
+            const finalName = selectedBranch ? `[${selectedBranch.name}] ${assetName}` : assetName;
+            onSaveAsset(selectedSkuId, finalName, pngDataUrl);
+        }
+    };
+
+    const handleDownloadImage = async () => {
+        const pngDataUrl = await getImageDataUrl();
+        if (pngDataUrl) {
+            const link = document.createElement('a');
+            link.href = pngDataUrl;
+            link.download = `${assetName || 'pop-design'}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+
+    const handleDownloadPDF = async () => {
+        const pngDataUrl = await getImageDataUrl();
+        if (!pngDataUrl) return;
+
+        try {
+            const { jsPDF } = jspdf;
+            const orientation = canvasWidth > canvasHeight ? 'l' : 'p';
+            const pdf = new jsPDF({
+                orientation,
+                unit: 'px',
+                format: [canvasWidth, canvasHeight]
+            });
+
+            pdf.addImage(pngDataUrl, 'PNG', 0, 0, canvasWidth, canvasHeight);
+            pdf.save(`${assetName || 'pop-design'}.pdf`);
+        } catch (e) {
+            console.error("PDF generation failed", e);
+            alert("PDF生成に失敗しました。印刷機能を使用してください。");
+            // Fallback to print
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                printWindow.document.write(`<html><body><img src="${pngDataUrl}" onload="window.print();window.close()"/></body></html>`);
+                printWindow.document.close();
             }
-            URL.revokeObjectURL(url);
-        };
-        img.src = url;
+        }
     };
 
 
@@ -332,6 +423,13 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
         { name: 'ブラック', value: '#1f2937' }, 
     ];
 
+    const fontFamilies = [
+        { name: 'ゴシック (標準)', value: 'sans-serif' },
+        { name: '明朝体 (エレガント)', value: '"Yuji Syuku", serif' },
+        { name: 'ポップ体 (太字・元気)', value: '"Potta One", cursive' },
+        { name: '丸ゴシック (親しみ)', value: '"RocknRoll One", sans-serif' },
+    ];
+
     const renderDesignView = () => (
         <div className="flex flex-1 overflow-hidden min-h-0 relative h-full">
             
@@ -340,31 +438,13 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
                 className={`bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col transition-all duration-300 ease-in-out z-10 ${isLeftPanelOpen ? 'w-72 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}
             >
                 <div className="w-72 h-full overflow-y-auto custom-scrollbar p-4 flex flex-col gap-6">
-                    {/* Templates */}
+                    {/* Document Settings */}
                     <div>
-                        <h3 className="font-bold text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider mb-3">テンプレート</h3>
-                        <div className="grid grid-cols-2 gap-2">
-                            {MOCK_POP_TEMPLATES.map(tmpl => (
-                                <button
-                                    key={tmpl.id}
-                                    onClick={() => applyTemplate(tmpl)}
-                                    className="group relative border border-slate-200 dark:border-zinc-700 rounded-lg p-1.5 hover:ring-2 hover:ring-zinc-900 dark:hover:ring-white transition-all text-left bg-slate-50 dark:bg-zinc-800"
-                                    disabled={!selectedSku}
-                                >
-                                    <div className="w-full h-12 rounded border border-slate-200/50" style={{ backgroundColor: tmpl.backgroundColor }}>
-                                        <div className="w-full h-1/4 bg-black/5 mt-2"></div>
-                                    </div>
-                                    <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 mt-1 truncate group-hover:text-zinc-900 dark:group-hover:text-white">{tmpl.name}</p>
-                                </button>
-                            ))}
+                        <h3 className="font-bold text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider mb-3">キャンバス設定</h3>
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                            <Input label="幅 (px)" type="number" value={canvasWidth} onChange={(e) => setCanvasWidth(parseInt(e.target.value) || 100)} className="text-xs" />
+                            <Input label="高さ (px)" type="number" value={canvasHeight} onChange={(e) => setCanvasHeight(parseInt(e.target.value) || 100)} className="text-xs" />
                         </div>
-                    </div>
-
-                    <div className="border-t border-slate-100 dark:border-zinc-800"></div>
-
-                    {/* Paper Settings */}
-                    <div>
-                        <h3 className="font-bold text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider mb-3">用紙カラー</h3>
                         <div className="flex gap-2">
                             {paperColors.map(c => (
                                 <button
@@ -376,6 +456,44 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
                                 />
                             ))}
                         </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 dark:border-zinc-800"></div>
+
+                    {/* Templates */}
+                    <div>
+                        <h3 className="font-bold text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider mb-3">テンプレート</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                            {allTemplates.map(tmpl => {
+                                const isCustom = customTemplates.some(ct => ct.id === tmpl.id);
+                                return (
+                                    <div key={tmpl.id} className="relative group">
+                                        <button
+                                            onClick={() => applyTemplate(tmpl)}
+                                            className="w-full relative border border-slate-200 dark:border-zinc-700 rounded-lg p-1.5 hover:ring-2 hover:ring-zinc-900 dark:hover:ring-white transition-all text-left bg-slate-50 dark:bg-zinc-800"
+                                            disabled={!selectedSku}
+                                        >
+                                            <div className="w-full h-12 rounded border border-slate-200/50 flex items-center justify-center text-[10px] text-slate-400" style={{ backgroundColor: tmpl.backgroundColor }}>
+                                                {tmpl.width && tmpl.height ? `${tmpl.width}x${tmpl.height}` : ''}
+                                            </div>
+                                            <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 mt-1 truncate group-hover:text-zinc-900 dark:group-hover:text-white">{tmpl.name}</p>
+                                        </button>
+                                        {isCustom && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(tmpl.id); }}
+                                                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                title="テンプレートを削除"
+                                            >
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                            </button>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <Button size="sm" variant="secondary" className="w-full mt-3 text-xs" onClick={() => setIsSaveTemplateModalOpen(true)}>
+                            現在のデザインを保存
+                        </Button>
                     </div>
 
                     <div className="border-t border-slate-100 dark:border-zinc-800"></div>
@@ -424,14 +542,14 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
 
             {/* Center: Main Canvas Area */}
             <div 
-                className="flex-1 bg-zinc-100 dark:bg-zinc-950/50 overflow-auto flex items-center justify-center relative shadow-inner" 
+                className="flex-1 bg-zinc-100 dark:bg-zinc-950/50 overflow-auto flex items-center justify-center relative shadow-inner p-8" 
                 onClick={handleCanvasClick}
             >
-                <div className="relative shadow-2xl bg-white transition-transform duration-200" style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}>
+                <div className="relative shadow-2xl bg-white transition-all duration-200" style={{ width: canvasWidth, height: canvasHeight }}>
                     <svg 
                         ref={svgRef}
-                        width={CANVAS_WIDTH} 
-                        height={CANVAS_HEIGHT}
+                        width={canvasWidth} 
+                        height={canvasHeight}
                         style={{ backgroundColor: paperColor }}
                     >
                         {elements.map(el => {
@@ -479,7 +597,7 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
                                         fill={el.fill}
                                         fontSize={el.fontSize}
                                         fontWeight={el.fontWeight}
-                                        fontFamily="sans-serif"
+                                        fontFamily={el.fontFamily || 'sans-serif'}
                                         stroke={stroke}
                                         strokeWidth={strokeWidth}
                                         onMouseDown={(e) => handleMouseDown(e, el.id)}
@@ -507,8 +625,8 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
                         })}
                     </svg>
                 </div>
-                    <div className="absolute bottom-4 right-4 text-xs text-slate-400 font-mono pointer-events-none">
-                    Canvas: {CANVAS_WIDTH}x{CANVAS_HEIGHT} px
+                <div className="absolute bottom-4 right-4 text-xs text-slate-400 font-mono pointer-events-none bg-white/80 p-1 rounded">
+                    {canvasWidth} x {canvasHeight} px
                 </div>
             </div>
 
@@ -558,6 +676,18 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
                                         value={selectedElement.text || ''} 
                                         onChange={(e) => updateSelectedProperty('text', e.target.value)}
                                     />
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 mb-1.5">フォント (書体)</label>
+                                        <select 
+                                            value={selectedElement.fontFamily || 'sans-serif'}
+                                            onChange={(e) => updateSelectedProperty('fontFamily', e.target.value)}
+                                            className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm"
+                                        >
+                                            {fontFamilies.map(f => (
+                                                <option key={f.value} value={f.value}>{f.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                     <Input 
                                         label="フォントサイズ" 
                                         type="number" 
@@ -608,15 +738,36 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
                         </div>
                     )}
                     
-                    <div className="mt-auto pt-4">
+                    <div className="mt-auto pt-4 border-t border-zinc-100 dark:border-zinc-800">
                         <Input 
                             label="保存名" 
                             value={assetName} 
                             onChange={(e) => setAssetName(e.target.value)}
                         />
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                            <Button onClick={handleDownloadImage} size="sm" variant="secondary" disabled={!selectedSkuId} className="text-xs">
+                                {ICONS.download} 画像 (PNG)
+                            </Button>
+                            <Button onClick={handleDownloadPDF} size="sm" variant="secondary" disabled={!selectedSkuId} className="text-xs">
+                                📄 PDF保存
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* Save Template Modal */}
+            <Modal isOpen={isSaveTemplateModalOpen} onClose={() => setIsSaveTemplateModalOpen(false)} title="テンプレートとして保存">
+                <div className="space-y-4">
+                    <p className="text-sm text-slate-500">現在のキャンバスサイズ、レイアウト、配色を新しいテンプレートとして保存します。</p>
+                    <Input label="テンプレート名" value={newTemplateName} onChange={(e) => setNewTemplateName(e.target.value)} placeholder="例: A4横 セール用" />
+                    <Input label="説明" value={newTemplateDesc} onChange={(e) => setNewTemplateDesc(e.target.value)} placeholder="用途など" />
+                    <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="secondary" onClick={() => setIsSaveTemplateModalOpen(false)}>キャンセル</Button>
+                        <Button onClick={handleSaveTemplate} disabled={!newTemplateName}>保存</Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 
