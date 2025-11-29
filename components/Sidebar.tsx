@@ -13,7 +13,7 @@ interface SidebarProps {
     isOpenMobile: boolean;
     onCloseMobile: () => void;
     onLogout: () => void;
-    unreadNotificationCount: number; // New Prop
+    unreadNotificationCount: number;
 }
 
 const NavItem: React.FC<{
@@ -23,7 +23,7 @@ const NavItem: React.FC<{
     isActive: boolean;
     isCollapsed: boolean;
     onClick: () => void;
-    badgeCount?: number; // New Prop
+    badgeCount?: number;
 }> = ({ icon, label, isActive, isCollapsed, onClick, badgeCount }) => (
     <button
         onClick={onClick}
@@ -113,7 +113,6 @@ export default function Sidebar({ activeView, setActiveView, currentUser, userRo
 
     const adminNavItem = { view: 'ADMIN' as ViewType, label: 'システム管理', icon: ICONS.settings, requiredPerm: 'ADMIN_VIEW' as Permission };
     const storeNavItem = { view: 'EXTENSION_STORE' as ViewType, label: '拡張機能ストア', icon: ICONS.store };
-    const notifNavItem = { view: 'NOTIFICATIONS' as ViewType, label: '通知', icon: ICONS.bell };
 
     const filteredNavItems = navItems.filter(item => hasPermission(item.requiredPerm));
     const filteredOmsItems = omsNavItems.filter(item => hasPermission(item.requiredPerm) && hasExtension(item.requiredExt));
@@ -137,16 +136,32 @@ export default function Sidebar({ activeView, setActiveView, currentUser, userRo
                 w-64
                 ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}
             `}>
-                <div className={`flex items-center gap-3 h-20 border-b border-zinc-800/50 ${isCollapsed ? 'justify-center px-0' : 'px-6'} shrink-0`}>
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/30 shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                {/* Header with Logo and Notification */}
+                <div className={`flex items-center h-20 border-b border-zinc-800/50 shrink-0 transition-all duration-300 ${isCollapsed && !isOpenMobile ? 'justify-center flex-col gap-1' : 'justify-between px-6'}`}>
+                    <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/30 shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </div>
+                        {(!isCollapsed || isOpenMobile) && (
+                            <h1 className="text-xl font-bold text-white tracking-tight font-['Plus_Jakarta_Sans'] whitespace-nowrap overflow-hidden">
+                                PIM <span className="text-primary-400 font-light">Pro</span>
+                            </h1>
+                        )}
                     </div>
-                    {/* Show title on mobile even if collapsed state is true (since mobile doesn't have collapse toggle usually) or check !isCollapsed */}
-                    {(!isCollapsed || isOpenMobile) && (
-                        <h1 className="text-xl font-bold text-white tracking-tight font-['Plus_Jakarta_Sans'] whitespace-nowrap overflow-hidden">
-                            PIM <span className="text-primary-400 font-light">Pro</span>
-                        </h1>
-                    )}
+
+                    {/* Notification Icon (Header) */}
+                    <button
+                        onClick={() => { setActiveView('NOTIFICATIONS'); onCloseMobile(); }}
+                        className={`relative p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors group ${activeView === 'NOTIFICATIONS' ? 'text-white bg-zinc-800' : ''}`}
+                        title="通知"
+                    >
+                        <div className="w-5 h-5">
+                            {ICONS.bell}
+                        </div>
+                        {unreadNotificationCount > 0 && (
+                            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-zinc-900 animate-pulse"></span>
+                        )}
+                    </button>
                 </div>
 
                 <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
@@ -205,15 +220,6 @@ export default function Sidebar({ activeView, setActiveView, currentUser, userRo
                                     System
                                 </div>
                             )}
-                            <NavItem
-                                icon={notifNavItem.icon}
-                                label={notifNavItem.label}
-                                view={notifNavItem.view}
-                                isActive={activeView === 'NOTIFICATIONS'}
-                                isCollapsed={isCollapsed && !isOpenMobile}
-                                onClick={() => { setActiveView('NOTIFICATIONS'); onCloseMobile(); }}
-                                badgeCount={unreadNotificationCount}
-                            />
                             <NavItem
                                 icon={storeNavItem.icon}
                                 label={storeNavItem.label}
