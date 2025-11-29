@@ -1,5 +1,6 @@
 
-import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate, WebCatalog, User, Project, ChatMessage, BrainstormIdea, Complaint, Driver, StockTransfer, Role, SkuDraft, ExportChannel } from './types';
+import type { Category, Attribute, AttributeSet, Series, Sku, Branch, Inventory, Order, CustomerOrder, PopTemplate, WebCatalog, User, Project, ChatMessage, BrainstormIdea, Complaint, Driver, StockTransfer, Role, SkuDraft, ExportChannel, ExtensionMetadata, AppNotification } from './types';
+import { ICONS } from './constants';
 
 export const MOCK_CATEGORIES: Category[] = [
     { id: 'cat1', name: '日用品' },
@@ -368,10 +369,12 @@ export const MOCK_ROLES: Role[] = [
 ];
 
 export const MOCK_USERS: User[] = [
-    { id: 'user1', name: '自分 (Admin)', avatarUrl: 'https://placehold.co/100/3b82f6/ffffff?text=ME', roleId: 'role_admin' },
-    { id: 'user2', name: '田中 健 (Manager)', avatarUrl: 'https://placehold.co/100/10b981/ffffff?text=TK', roleId: 'role_manager' },
-    { id: 'user3', name: '佐藤 愛 (Creator)', avatarUrl: 'https://placehold.co/100/f59e0b/ffffff?text=AS', roleId: 'role_creator' },
-    { id: 'user4', name: '鈴木 一郎 (Staff)', avatarUrl: 'https://placehold.co/100/6366f1/ffffff?text=IS', roleId: 'role_staff' },
+    { id: 'user_full', name: '開発者 (全拡張)', avatarUrl: 'https://placehold.co/100/3b82f6/ffffff?text=FULL', roleId: 'role_admin', activeExtensions: ['OMS', 'EC', 'CREATIVE', 'CATALOG', 'PROJECT', 'EXPORT'] },
+    { id: 'user_minimal', name: '新人 (拡張なし)', avatarUrl: 'https://placehold.co/100/e5e7eb/6b7280?text=MIN', roleId: 'role_admin', activeExtensions: [] },
+    { id: 'user1', name: '自分 (Admin)', avatarUrl: 'https://placehold.co/100/3b82f6/ffffff?text=ME', roleId: 'role_admin', activeExtensions: ['OMS', 'EC', 'CREATIVE', 'CATALOG', 'PROJECT', 'EXPORT'] },
+    { id: 'user2', name: '田中 健 (Manager)', avatarUrl: 'https://placehold.co/100/10b981/ffffff?text=TK', roleId: 'role_manager', activeExtensions: ['PROJECT', 'CATALOG', 'EXPORT'] },
+    { id: 'user3', name: '佐藤 愛 (Creator)', avatarUrl: 'https://placehold.co/100/f59e0b/ffffff?text=AS', roleId: 'role_creator', activeExtensions: ['CREATIVE', 'CATALOG', 'PROJECT'] },
+    { id: 'user4', name: '鈴木 一郎 (Staff)', avatarUrl: 'https://placehold.co/100/6366f1/ffffff?text=IS', roleId: 'role_staff', activeExtensions: ['OMS', 'EC'] },
 ];
 
 export const MOCK_PROJECTS: Project[] = [
@@ -380,7 +383,7 @@ export const MOCK_PROJECTS: Project[] = [
         name: '2024 春の新製品開発',
         description: '来春リリース予定のサステナブル掃除用品シリーズの企画・開発',
         status: 'IN_PROGRESS',
-        memberIds: ['user1', 'user2', 'user3'],
+        memberIds: ['user1', 'user2', 'user3', 'user_full'],
         createdAt: '2023-11-01',
         dueDate: '2024-02-28'
     },
@@ -389,7 +392,7 @@ export const MOCK_PROJECTS: Project[] = [
         name: '家電ラインナップ刷新',
         description: '既存の白物家電のリブランディング',
         status: 'PLANNING',
-        memberIds: ['user1', 'user2'],
+        memberIds: ['user1', 'user2', 'user_full'],
         createdAt: '2023-11-10'
     }
 ];
@@ -458,4 +461,20 @@ export const MOCK_EXPORT_CHANNELS: ExportChannel[] = [
         ],
         lastExported: '2023-11-18 09:30'
     }
+];
+
+export const MOCK_EXTENSIONS: ExtensionMetadata[] = [
+    { id: 'OMS', name: '在庫・発注管理システム', description: '店舗在庫の可視化、本部への発注、店舗間移動、ドライバー手配などのロジスティクス機能を提供します。', price: 10000, icon: ICONS.truck },
+    { id: 'EC', name: 'EC連携サービス', description: 'オンラインストア専用の在庫管理と受注処理機能を追加します。', price: 15000, icon: ICONS.globe },
+    { id: 'CREATIVE', name: 'POP作成スタジオ', description: '直感的なドラッグ＆ドロップ操作で、店舗用POPやプライスカードを簡単に作成・共有できます。', price: 5000, icon: ICONS.palette },
+    { id: 'CATALOG', name: 'Webカタログビルダー', description: 'ノーコードで魅力的な商品特集ページやカタログサイトを作成し、公開できます。', price: 8000, icon: ICONS.book },
+    { id: 'PROJECT', name: '企画プロジェクト管理', description: 'チームでの新商品開発、チャット、アイデアブレインストーミング、SKU起案ワークフローを実現します。', price: 12000, icon: ICONS.users },
+    { id: 'EXPORT', name: 'チャネルエクスポート', description: 'Amazon, 楽天など各モール形式に合わせて商品データをCSV出力。マッピング設定も可能です。', price: 3000, icon: ICONS.exportCloud },
+];
+
+export const MOCK_NOTIFICATIONS: AppNotification[] = [
+    { id: 'notif1', title: 'システムメンテナンス', message: '定期メンテナンスが完了しました。', type: 'SYSTEM', actorId: 'role_admin', timestamp: '2023-11-20 09:00', isRead: true },
+    { id: 'notif2', title: 'SKUドラフト承認', message: '「詰め替えボトル 500ml」が承認されました。', type: 'PROJECT', actorId: 'user3', timestamp: '2023-11-21 14:30', isRead: false },
+    { id: 'notif3', title: '在庫アラート', message: '渋谷本店で「iPhone 14 Pro」の在庫が減少しています。', type: 'ALERT', actorId: 'user_full', timestamp: '2023-11-22 10:15', isRead: false },
+    { id: 'notif4', title: '新規発注', message: '大阪梅田店から新規発注がありました。', type: 'ORDER', actorId: 'user4', timestamp: '2023-11-22 11:00', isRead: true },
 ];

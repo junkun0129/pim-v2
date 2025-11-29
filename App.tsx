@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder, WebCatalog, Project, Complaint, Driver, StockTransfer, User, Role, SkuDraft, ExportChannel, DraftStatus } from './types';
+import type { Sku, Series, Category, AttributeSet, ViewType, Attribute, Branch, Inventory, Order, CustomerOrder, WebCatalog, Project, Complaint, Driver, StockTransfer, User, Role, SkuDraft, ExportChannel, DraftStatus, ExtensionType, AppNotification } from './types';
 import Sidebar from './components/Sidebar';
 import SkuView from './components/SkuView';
 import GenericManager from './components/GenericManager';
@@ -11,9 +11,12 @@ import EcService from './components/EcService';
 import CreativeStudio from './components/CreativeStudio';
 import WebCatalogManager from './components/WebCatalogManager';
 import ProjectManager from './components/ProjectManager';
-import ChannelExportManager from './components/ChannelExportManager'; // New Import
+import ChannelExportManager from './components/ChannelExportManager';
 import AdminPanel from './components/AdminPanel';
-import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS, MOCK_CATALOGS, MOCK_PROJECTS, MOCK_COMPLAINTS, MOCK_DRIVERS, MOCK_TRANSFERS, MOCK_USERS, MOCK_ROLES, MOCK_DRAFTS, MOCK_EXPORT_CHANNELS } from './mockData';
+import LoginScreen from './components/LoginScreen';
+import ExtensionStore from './components/ExtensionStore';
+import NotificationCenter from './components/NotificationCenter';
+import { MOCK_SKUS, MOCK_SERIES, MOCK_CATEGORIES, MOCK_ATTRIBUTES, MOCK_ATTRIBUTE_SETS, MOCK_BRANCHES, MOCK_INVENTORY, MOCK_ORDERS, MOCK_CUSTOMER_ORDERS, MOCK_CATALOGS, MOCK_PROJECTS, MOCK_COMPLAINTS, MOCK_DRIVERS, MOCK_TRANSFERS, MOCK_USERS, MOCK_ROLES, MOCK_DRAFTS, MOCK_EXPORT_CHANNELS, MOCK_NOTIFICATIONS } from './mockData';
 import { APP_CONFIG } from './config';
 import { api } from './api';
 import { ToastContainer, ToastMessage, ToastType } from './components/ui/Toast';
@@ -42,7 +45,7 @@ export default function App() {
 
     // New Project State
     const [projects, setProjects] = useState<Project[]>([]);
-    const [drafts, setDrafts] = useState<SkuDraft[]>([]); // New Drafts State
+    const [drafts, setDrafts] = useState<SkuDraft[]>([]); 
 
     // New Export State
     const [exportChannels, setExportChannels] = useState<ExportChannel[]>([]);
@@ -50,7 +53,11 @@ export default function App() {
     // User & Role State
     const [users, setUsers] = useState<User[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
-    const [currentUserId, setCurrentUserId] = useState<string>('user1'); // Default to Admin
+    // Allow null for "Logged Out" state. Default to 'user_full' for dev convenience.
+    const [currentUserId, setCurrentUserId] = useState<string | null>('user_full'); 
+
+    // Notification State
+    const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
     const [activeView, setActiveView] = useState<ViewType>('SKUs');
     const [selectedSkuId, setSelectedSkuId] = useState<string | null>(null);
@@ -100,6 +107,7 @@ export default function App() {
             setExportChannels(MOCK_EXPORT_CHANNELS);
             setUsers(MOCK_USERS);
             setRoles(MOCK_ROLES);
+            setNotifications(MOCK_NOTIFICATIONS);
 
             if (APP_CONFIG.useMockData) {
                 setSkus(MOCK_SKUS);
@@ -127,12 +135,82 @@ export default function App() {
         loadData();
     }, []);
 
+    // --- Helper: Action Logger (Notification Generator) ---
+    const logSystemAction = (type: AppNotification['type'], title: string, message: string) => {
+        if (!currentUserId) return;
+        const newNotif: AppNotification = {
+            id: `notif-${Date.now()}`,
+            type,
+            title,
+            message,
+            actorId: currentUserId,
+            timestamp: new Date().toLocaleString(),
+            isRead: false
+        };
+        setNotifications(prev => [newNotif, ...prev]);
+    };
+
+    const handleMarkAllNotificationsRead = () => {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        addToast('success', 'すべて既読にしました');
+    };
+
+    const handleClearNotifications = () => {
+        if(window.confirm('通知履歴をすべて削除しますか？')) {
+            setNotifications([]);
+            addToast('info', '通知履歴をクリアしました');
+        }
+    };
+
+    // Auth Handlers
+    const handleLogin = (userId: string) => {
+        setCurrentUserId(userId);
+        addToast('success', 'ログインしました');
+    };
+
+    const handleLogout = () => {
+        setIsLoading(true);
+        // Simulate slight delay
+        setTimeout(() => {
+            setCurrentUserId(null);
+            setIsLoading(false);
+            addToast('info', 'ログアウトしました');
+        }, 500);
+    };
+
     // Permission Guard Logic
     const hasAccess = (requiredPerm: string) => {
         if (!currentUserRole) return false;
         return currentUserRole.permissions.includes(requiredPerm as any);
     };
 
+    // Extension Guard Logic
+    const hasExtension = (ext: ExtensionType) => {
+        return currentUser?.activeExtensions.includes(ext) || false;
+    };
+
+    // --- Extension Store Handler ---
+    const handleToggleExtension = (extId: ExtensionType) => {
+        if (!currentUser) return;
+        const currentExts = currentUser.activeExtensions;
+        let newExts: ExtensionType[];
+        let message = '';
+
+        if (currentExts.includes(extId)) {
+            newExts = currentExts.filter(e => e !== extId);
+            message = '拡張機能を無効化しました';
+        } else {
+            newExts = [...currentExts, extId];
+            message = '拡張機能を購入しました！';
+        }
+
+        // Update local user state
+        setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, activeExtensions: newExts } : u));
+        addToast('success', message);
+        logSystemAction('SYSTEM', '機能拡張更新', message);
+    };
+
+    // --- Master Data Handlers ---
     const handleAddSku = async (newSku: Omit<Sku, 'id'>) => {
         setIsMutating(true);
         try {
@@ -140,10 +218,12 @@ export default function App() {
                 const sku: Sku = { ...newSku, id: `sku-${Date.now()}` };
                 setSkus([...skus, sku]);
                 addToast('success', 'SKUを作成しました');
+                logSystemAction('SYSTEM', 'SKU作成', `新しいSKU「${newSku.name}」を作成しました。`);
             } else {
                 const savedSku = await api.createSku(newSku);
                 setSkus([...skus, savedSku]);
                 addToast('success', 'SKUを保存しました');
+                logSystemAction('SYSTEM', 'SKU作成', `新しいSKU「${newSku.name}」を作成しました。`);
             }
         } catch (err) {
             addToast('error', 'SKUの作成に失敗しました');
@@ -163,6 +243,7 @@ export default function App() {
                 setSkus(prev => prev.map(s => s.id === saved.id ? saved : s));
                 addToast('success', 'SKUを更新しました');
             }
+            logSystemAction('SYSTEM', 'SKU更新', `SKU「${updatedSku.name}」を更新しました。`);
         } catch (err) {
             addToast('error', 'SKUの更新に失敗しました');
         } finally {
@@ -173,10 +254,10 @@ export default function App() {
     const handleImportSkus = (newSkus: Omit<Sku, 'id'>[]) => {
         setIsMutating(true);
         try {
-            // Bulk add - simplistic implementation for mock
             const addedSkus = newSkus.map((s, i) => ({ ...s, id: `imp-${Date.now()}-${i}` }));
             setSkus(prev => [...prev, ...addedSkus]);
             addToast('success', `${newSkus.length}件のSKUをインポートしました`);
+            logSystemAction('SYSTEM', 'SKUインポート', `${newSkus.length}件のSKUを一括登録しました。`);
         } finally {
             setIsMutating(false);
         }
@@ -194,6 +275,7 @@ export default function App() {
                 setSkus(skus.filter(s => s.id !== id));
                 addToast('info', 'SKUを削除しました');
             }
+            logSystemAction('SYSTEM', 'SKU削除', `SKU ID: ${id} を削除しました。`);
         } catch (err) {
             addToast('error', '削除に失敗しました');
         } finally {
@@ -209,10 +291,12 @@ export default function App() {
                 const s: Series = { ...newSeries, id: `ser-${Date.now()}`, childSkuIds: [] };
                 setSeries([...series, s]);
                 addToast('success', 'シリーズを作成しました');
+                logSystemAction('SYSTEM', 'シリーズ作成', `シリーズ「${newSeries.name}」を作成しました。`);
             } else {
                 const saved = await api.createSeries(newSeries);
                 setSeries([...series, saved]);
                 addToast('success', 'シリーズを作成しました');
+                logSystemAction('SYSTEM', 'シリーズ作成', `シリーズ「${newSeries.name}」を作成しました。`);
             }
         } finally {
             setIsMutating(false);
@@ -260,10 +344,12 @@ export default function App() {
                 const cat: Category = { ...newCat, id: `cat-${Date.now()}` };
                 setCategories([...categories, cat]);
                 addToast('success', 'カテゴリを追加しました');
+                logSystemAction('SYSTEM', 'カテゴリ作成', `「${newCat.name}」を追加しました。`);
             } else {
                 const saved = await api.createCategory(newCat);
                 setCategories([...categories, saved]);
                 addToast('success', 'カテゴリを追加しました');
+                logSystemAction('SYSTEM', 'カテゴリ作成', `「${newCat.name}」を追加しました。`);
             }
         } finally {
             setIsMutating(false);
@@ -277,7 +363,6 @@ export default function App() {
                 setCategories(prev => prev.map(c => c.id === updatedCat.id ? updatedCat : c));
                 addToast('success', 'カテゴリを更新しました');
             } else {
-                // assume update API exists or use create as placeholder
                 setCategories(prev => prev.map(c => c.id === updatedCat.id ? updatedCat : c));
                 addToast('success', 'カテゴリを更新しました');
             }
@@ -290,7 +375,6 @@ export default function App() {
         if (!window.confirm('カテゴリを削除しますか？子カテゴリも全て削除されます。')) return;
         setIsMutating(true);
         try {
-            // Helper to find all children recursively
             const getAllChildIds = (parentId: string): string[] => {
                 const children = categories.filter(c => c.parentId === parentId);
                 let ids = children.map(c => c.id);
@@ -306,8 +390,6 @@ export default function App() {
                 setCategories(categories.filter(c => !idsToDelete.includes(c.id)));
                 addToast('info', `${idsToDelete.length}件のカテゴリを削除しました`);
             } else {
-                // In real API, we might need to delete one by one or have a bulk delete endpoint
-                // Here we assume backend handles cascade or we loop
                 for (const catId of idsToDelete) {
                     await api.deleteCategory(catId);
                 }
@@ -356,7 +438,7 @@ export default function App() {
         if (APP_CONFIG.useMockData) {
             setAttributeSets(prev => prev.map(s => s.id === setId ? { ...s, attributeIds, sharedAttributeIds } : s));
         } else {
-            await api.updateAttributeSet(setId, attributeIds); // needs update to API signature for shared
+            await api.updateAttributeSet(setId, attributeIds); 
             setAttributeSets(prev => prev.map(s => s.id === setId ? { ...s, attributeIds, sharedAttributeIds } : s));
         }
         addToast('success', '属性セットを更新しました');
@@ -382,6 +464,9 @@ export default function App() {
         };
         setOrders([order, ...orders]);
         addToast('success', '発注依頼を作成しました');
+        
+        const branchName = branches.find(b => b.id === newOrder.branchId)?.name || newOrder.branchId;
+        logSystemAction('ORDER', '新規発注', `${branchName}から発注が作成されました (数量: ${newOrder.quantity})`);
     };
 
     // --- EC Handlers (Mock) ---
@@ -389,7 +474,6 @@ export default function App() {
         const sku = skus.find(s => s.id === skuId);
         if(!sku) return;
         
-        // Deduct Inventory
         setInventory(prev => prev.map(inv => {
             if (inv.branchId === 'br-ec' && inv.skuId === skuId) {
                 return { ...inv, quantity: Math.max(0, inv.quantity - quantity) };
@@ -397,7 +481,6 @@ export default function App() {
             return inv;
         }));
 
-        // Create Customer Order
         const newOrder: CustomerOrder = {
             id: `co-${Date.now()}`,
             customerName: 'ゲスト購入者',
@@ -409,6 +492,7 @@ export default function App() {
         };
         setCustomerOrders([newOrder, ...customerOrders]);
         addToast('success', '注文が確定しました！');
+        logSystemAction('ORDER', 'EC注文確定', `ECサイトで「${sku.name}」が購入されました。`);
     };
 
     // --- Creative Studio Handlers (Mock) ---
@@ -422,7 +506,6 @@ export default function App() {
             branchId: currentBranchId
         };
 
-        // Update SKU with new asset
         setSkus(prev => prev.map(sku => {
             if (sku.id === skuId) {
                 return { ...sku, assets: [newAsset, ...(sku.assets || [])] };
@@ -431,6 +514,7 @@ export default function App() {
         }));
         
         addToast('success', 'POPデザインを保存しました');
+        logSystemAction('PROJECT', 'デザイン保存', `POP「${assetName}」を保存しました。`);
     };
 
     // --- Web Catalog Handlers (Mock) ---
@@ -443,6 +527,7 @@ export default function App() {
             return [...prev, catalog];
         });
         addToast('success', 'カタログを保存しました');
+        logSystemAction('PROJECT', 'カタログ更新', `Webカタログ「${catalog.name}」を保存しました。`);
     };
 
     const handleDeleteCatalog = (id: string) => {
@@ -461,6 +546,7 @@ export default function App() {
         };
         setProjects([newProject, ...projects]);
         addToast('success', 'プロジェクトを作成しました');
+        logSystemAction('PROJECT', 'プロジェクト開始', `新規プロジェクト「${newProject.name}」が開始されました。`);
     };
 
     const handleAddProjectMember = (projectId: string, userId: string) => {
@@ -479,15 +565,20 @@ export default function App() {
             ...data,
             id: `draft-${Date.now()}`,
             createdAt: new Date().toISOString().split('T')[0],
-            authorId: currentUserId
+            authorId: currentUserId!
         };
         setDrafts([newDraft, ...drafts]);
         addToast('success', 'SKUドラフトを起案しました');
+        logSystemAction('PROJECT', 'SKU起案', `ドラフト「${newDraft.name}」が提出されました。`);
     };
 
     const handleUpdateDraftStatus = (draftId: string, status: DraftStatus) => {
+        const draft = drafts.find(d => d.id === draftId);
         setDrafts(prev => prev.map(d => d.id === draftId ? { ...d, status } : d));
         addToast('success', `ステータスを更新しました: ${status}`);
+        if (draft) {
+            logSystemAction('PROJECT', 'ドラフト承認/却下', `「${draft.name}」のステータスが ${status} に変更されました。`);
+        }
     };
 
     // --- OMS: Messages, Logistics, Transfer ---
@@ -503,32 +594,25 @@ export default function App() {
 
     const handleAssignDriver = (orderId: string, driverId: string) => {
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, driverId, status: 'SHIPPED' } : o));
-        
-        // Mark driver busy
         setDrivers(prev => prev.map(d => d.id === driverId ? { ...d, status: 'BUSY', currentLocation: '配送中' } : d));
-        
         addToast('success', 'ドライバーを割り当てました');
     };
 
     const handleTransferStock = (data: Omit<StockTransfer, 'id' | 'status' | 'date'>) => {
-        // Create record
         const transfer: StockTransfer = {
             ...data,
             id: `tr-${Date.now()}`,
-            status: 'COMPLETED', // Auto complete for mock
+            status: 'COMPLETED',
             date: new Date().toISOString().split('T')[0]
         };
         setTransfers([transfer, ...transfers]);
 
-        // Move stock
         setInventory(prev => {
             const next = [...prev];
-            // Decrement from
             const fromIdx = next.findIndex(i => i.branchId === data.fromBranchId && i.skuId === data.skuId);
             if (fromIdx >= 0) {
                 next[fromIdx] = { ...next[fromIdx], quantity: Math.max(0, next[fromIdx].quantity - data.quantity) };
             }
-            // Increment to
             const toIdx = next.findIndex(i => i.branchId === data.toBranchId && i.skuId === data.skuId);
             if (toIdx >= 0) {
                 next[toIdx] = { ...next[toIdx], quantity: next[toIdx].quantity + data.quantity };
@@ -539,6 +623,7 @@ export default function App() {
         });
 
         addToast('success', '在庫移動処理が完了しました');
+        logSystemAction('ORDER', '在庫移動', `SKU移動: ${data.quantity}個 (from ${data.fromBranchId} to ${data.toBranchId})`);
     };
 
     // --- Channel Export Handlers ---
@@ -564,6 +649,7 @@ export default function App() {
     const handleUpdateUserRole = (userId: string, roleId: string) => {
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, roleId } : u));
         addToast('success', 'ユーザー権限を更新しました');
+        logSystemAction('SYSTEM', '権限変更', `ユーザーID:${userId} のロールを変更しました。`);
     };
 
     const handleCreateRole = (roleData: Omit<Role, 'id'>) => {
@@ -588,6 +674,27 @@ export default function App() {
 
 
     const renderContent = () => {
+        // --- System Views ---
+        if (activeView === 'EXTENSION_STORE') {
+            return (
+                <ExtensionStore 
+                    activeExtensions={currentUser?.activeExtensions || []}
+                    onToggleExtension={handleToggleExtension}
+                />
+            );
+        }
+
+        if (activeView === 'NOTIFICATIONS') {
+            return (
+                <NotificationCenter 
+                    notifications={notifications} 
+                    users={users}
+                    onMarkAllRead={handleMarkAllNotificationsRead}
+                    onClearAll={handleClearNotifications}
+                />
+            );
+        }
+
         if (activeView === 'ADMIN') {
             if (!hasAccess('ADMIN_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
             return <AdminPanel 
@@ -600,13 +707,15 @@ export default function App() {
             />;
         }
 
+        // --- Extension Views (Checked against Permissions AND Active Extensions) ---
+
         if (activeView === 'PROJECTS') {
-            if (!hasAccess('PROJECT_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+            if (!hasAccess('PROJECT_VIEW') || !hasExtension('PROJECT')) return <div className="p-10 text-center text-slate-500">機能が無効化されているか、権限がありません</div>;
             return <ProjectManager 
                 projects={projects} 
                 onCreateProject={handleCreateProject}
                 onAddMember={handleAddProjectMember}
-                currentUserId={currentUserId}
+                currentUserId={currentUserId!}
                 userRole={currentUserRole}
                 users={users}
                 drafts={drafts}
@@ -616,12 +725,12 @@ export default function App() {
         }
 
         if (activeView === 'CATALOG') {
-            if (!hasAccess('CATALOG_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+            if (!hasAccess('CATALOG_VIEW') || !hasExtension('CATALOG')) return <div className="p-10 text-center text-slate-500">機能が無効化されているか、権限がありません</div>;
             return <WebCatalogManager catalogs={catalogs} skus={skus} categories={categories} series={series} onSaveCatalog={handleSaveCatalog} onDeleteCatalog={handleDeleteCatalog} />;
         }
 
         if (activeView === 'CHANNEL_EXPORT') {
-             if (!hasAccess('MASTER_EXPORT')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+             if (!hasAccess('MASTER_EXPORT') || !hasExtension('EXPORT')) return <div className="p-10 text-center text-slate-500">機能が無効化されているか、権限がありません</div>;
              return (
                 <ChannelExportManager 
                     skus={skus}
@@ -638,17 +747,17 @@ export default function App() {
         }
 
         if (activeView === 'CREATIVE') {
-            if (!hasAccess('CREATIVE_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+            if (!hasAccess('CREATIVE_VIEW') || !hasExtension('CREATIVE')) return <div className="p-10 text-center text-slate-500">機能が無効化されているか、権限がありません</div>;
             return <CreativeStudio skus={skus} branches={branches} onSaveAsset={handleSaveAsset} />;
         }
 
         if (activeView === 'EC') {
-            if (!hasAccess('EC_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+            if (!hasAccess('EC_VIEW') || !hasExtension('EC')) return <div className="p-10 text-center text-slate-500">機能が無効化されているか、権限がありません</div>;
             return <EcService skus={skus} series={series} inventory={inventory} ecBranch={branches.find(b => b.type === 'EC')} customerOrders={customerOrders} onPlaceOrder={handleEcOrder} />;
         }
 
         if (activeView === 'Orders') {
-             if (!hasAccess('OMS_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
+             if (!hasAccess('OMS_VIEW') || !hasExtension('OMS')) return <div className="p-10 text-center text-slate-500">機能が無効化されているか、権限がありません</div>;
              return (
                 <OrderManager 
                     skus={skus} 
@@ -669,6 +778,8 @@ export default function App() {
                 />
             );
         }
+
+        // --- Core Views (Master Data) ---
 
         if (activeView === 'SKU_DETAIL' && selectedSkuId) {
             const sku = skus.find(s => s.id === selectedSkuId);
@@ -751,6 +862,11 @@ export default function App() {
         );
     };
 
+    // --- Authentication Guard ---
+    if (!currentUserId) {
+        return <LoginScreen users={users} onLogin={handleLogin} />;
+    }
+
     return (
         <div className="flex h-screen bg-zinc-50 dark:bg-black text-zinc-900 font-sans overflow-hidden">
             <ToastContainer toasts={toasts} removeToast={removeToast} />
@@ -780,6 +896,8 @@ export default function App() {
                 onSwitchUser={(id) => setCurrentUserId(id)}
                 isOpenMobile={isMobileMenuOpen}
                 onCloseMobile={() => setIsMobileMenuOpen(false)}
+                onLogout={handleLogout}
+                unreadNotificationCount={notifications.filter(n => !n.isRead).length}
             />
             
             <main className="flex-1 overflow-auto pt-16 md:pt-0 relative w-full" id="main-content">

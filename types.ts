@@ -122,7 +122,7 @@ export interface StockTransfer {
     date: string;
 }
 
-export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'SERIES_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG' | 'PROJECTS' | 'CHANNEL_EXPORT' | 'ADMIN';
+export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'SERIES_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG' | 'PROJECTS' | 'CHANNEL_EXPORT' | 'ADMIN' | 'EXTENSION_STORE' | 'NOTIFICATIONS';
 
 // --- Creative Studio Types ---
 
@@ -192,11 +192,14 @@ export interface WebCatalog {
 
 // --- Project / Collaboration Types ---
 
+export type ExtensionType = 'OMS' | 'EC' | 'CREATIVE' | 'CATALOG' | 'PROJECT' | 'EXPORT';
+
 export interface User {
     id: string;
     name: string;
     avatarUrl?: string;
     roleId: string; // Link to Role
+    activeExtensions: ExtensionType[]; // Which extensions this user/tenant has purchased
 }
 
 export interface Project {
@@ -310,4 +313,24 @@ export interface Role {
     name: string;
     permissions: Permission[];
     description?: string;
+}
+
+// --- Store Types ---
+export interface ExtensionMetadata {
+    id: ExtensionType;
+    name: string;
+    description: string;
+    price: number;
+    icon: any; // We'll use the component key or name for now
+}
+
+// --- Notification Types ---
+export interface AppNotification {
+    id: string;
+    title: string;
+    message: string;
+    type: 'SYSTEM' | 'PROJECT' | 'ORDER' | 'ALERT';
+    actorId: string; // User ID who performed action
+    timestamp: string;
+    isRead: boolean;
 }
