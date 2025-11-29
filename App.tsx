@@ -53,8 +53,8 @@ export default function App() {
     // User & Role State
     const [users, setUsers] = useState<User[]>([]);
     const [roles, setRoles] = useState<Role[]>([]);
-    // Allow null for "Logged Out" state. Default to null for production feel.
-    const [currentUserId, setCurrentUserId] = useState<string | null>(null); 
+    // Allow null for "Logged Out" state. Default to 'user_full' for dev convenience.
+    const [currentUserId, setCurrentUserId] = useState<string | null>('user_full'); 
 
     // Notification State
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
