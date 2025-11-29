@@ -393,9 +393,9 @@ export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, o
                 isAllSelected={isAllPageSelected}
             />
 
-            {/* Pagination Controls */}
+            {/* Pagination Controls - Sticky Bottom */}
             {filteredSkus.length > 0 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between border-t border-zinc-200 dark:border-zinc-800 pt-4 gap-4">
+                <div className="sticky bottom-0 z-10 bg-zinc-50/95 dark:bg-black/95 backdrop-blur-md -mx-4 md:-mx-8 px-4 md:px-8 py-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                     <div className="flex items-center gap-4 text-sm text-zinc-500">
                         <span>
                             全 {filteredSkus.length} 件中 {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredSkus.length)} 件を表示
@@ -403,7 +403,7 @@ export default function SkuView({ skus, dataMap, addSku, updateSku, deleteSku, o
                         <select 
                             value={itemsPerPage}
                             onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                            className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded text-xs py-1"
+                            className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded text-xs py-1 shadow-sm"
                         >
                             <option value={10}>10件 / ページ</option>
                             <option value={20}>20件 / ページ</option>

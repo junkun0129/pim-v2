@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Sku, Series, Category, Attribute, ExportChannel, ExportColumn, AttributeSet } from '../types';
 import Card from './ui/Card';
 import Button from './ui/Button';
@@ -46,6 +46,10 @@ export default function ChannelExportManager({ skus, series, categories, attribu
     const [categoryFilter, setCategoryFilter] = useState('');
     const [attributeSetFilter, setAttributeSetFilter] = useState('');
     const [attributeFilters, setAttributeFilters] = useState<AttributeFilter[]>([]);
+    
+    // Pagination for Selection Modal
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(20);
     
     // UI State for adding attribute filter
     const [targetAttrId, setTargetAttrId] = useState('');
@@ -104,6 +108,15 @@ export default function ChannelExportManager({ skus, series, categories, attribu
             return true;
         });
     }, [skus, series, filterText, categoryFilter, attributeSetFilter, attributeFilters]);
+
+    // Reset pagination when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filterText, categoryFilter, attributeSetFilter, attributeFilters, itemsPerPage]);
+
+    // Pagination Calculation
+    const totalPages = Math.ceil(filteredSkus.length / itemsPerPage);
+    const paginatedSkus = filteredSkus.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const handleStartEdit = (channel?: ExportChannel) => {
         if (channel) {
@@ -519,7 +532,7 @@ export default function ChannelExportManager({ skus, series, categories, attribu
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                                {filteredSkus.map(sku => (
+                                {paginatedSkus.map(sku => (
                                     <tr key={sku.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/50 cursor-pointer" onClick={() => toggleSkuSelection(sku.id)}>
                                         <td className="px-4 py-2">
                                             <input 
@@ -536,18 +549,59 @@ export default function ChannelExportManager({ skus, series, categories, attribu
                                         </td>
                                     </tr>
                                 ))}
-                                {filteredSkus.length === 0 && (
+                                {paginatedSkus.length === 0 && (
                                     <tr><td colSpan={4} className="text-center py-8 text-slate-400">該当するSKUがありません</td></tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-3 border-t dark:border-zinc-700 shrink-0 mt-auto">
-                        <Button variant="secondary" onClick={() => setIsSelectionModalOpen(false)}>キャンセル</Button>
-                        <Button onClick={handleExecuteExport} disabled={selectedSkuIds.size === 0}>
-                            {selectedSkuIds.size}件をエクスポート
-                        </Button>
+                    {/* Pagination & Footer Actions */}
+                    <div className="pt-3 border-t dark:border-zinc-700 shrink-0 mt-auto flex flex-col md:flex-row gap-4 items-center justify-between">
+                        {/* Pagination Controls */}
+                        {filteredSkus.length > 0 && (
+                            <div className="flex items-center gap-2 text-xs text-zinc-500">
+                                <select 
+                                    value={itemsPerPage}
+                                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                                    className="bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded py-1"
+                                >
+                                    <option value={10}>10件 / ページ</option>
+                                    <option value={20}>20件 / ページ</option>
+                                    <option value={50}>50件 / ページ</option>
+                                </select>
+                                
+                                <div className="flex gap-1 items-center ml-2">
+                                    <button 
+                                        className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 disabled:opacity-50"
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                    >
+                                        &larr;
+                                    </button>
+                                    <span className="font-medium mx-1">
+                                        {currentPage} / {Math.max(1, totalPages)}
+                                    </span>
+                                    <button 
+                                        className="px-2 py-1 rounded bg-slate-100 dark:bg-zinc-800 disabled:opacity-50"
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        &rarr;
+                                    </button>
+                                </div>
+                                <span className="ml-1">
+                                    (全{filteredSkus.length}件)
+                                </span>
+                            </div>
+                        )}
+
+                        <div className="flex gap-2 w-full md:w-auto justify-end">
+                            <Button variant="secondary" onClick={() => setIsSelectionModalOpen(false)}>キャンセル</Button>
+                            <Button onClick={handleExecuteExport} disabled={selectedSkuIds.size === 0}>
+                                {selectedSkuIds.size}件をエクスポート
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </Modal>

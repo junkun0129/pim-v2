@@ -159,6 +159,7 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
 
         setElements(prev => [...prev, baseElement]);
         setSelectedElementId(id);
+        setIsRightPanelOpen(true);
     };
 
     // --- Template Logic ---
@@ -306,6 +307,7 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
         e.stopPropagation(); // Stop bubbling to canvas
         e.preventDefault(); // Prevent text selection
         setSelectedElementId(id);
+        setIsRightPanelOpen(true);
         setDragStart({ x: e.clientX, y: e.clientY });
         setIsDragging(true);
     };
@@ -570,6 +572,7 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
                                         stroke={stroke}
                                         strokeWidth={strokeWidth}
                                         onMouseDown={(e) => handleMouseDown(e, el.id)}
+                                        onClick={(e) => e.stopPropagation()}
                                         style={{ cursor: cursorStyle }}
                                     />
                                 );
@@ -585,6 +588,7 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
                                         stroke={stroke}
                                         strokeWidth={strokeWidth}
                                         onMouseDown={(e) => handleMouseDown(e, el.id)}
+                                        onClick={(e) => e.stopPropagation()}
                                         style={{ cursor: cursorStyle }}
                                     />
                                 );
@@ -601,6 +605,7 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
                                         stroke={stroke}
                                         strokeWidth={strokeWidth}
                                         onMouseDown={(e) => handleMouseDown(e, el.id)}
+                                        onClick={(e) => e.stopPropagation()}
                                         style={{ cursor: cursorStyle, userSelect: 'none' }}
                                     >
                                         {el.text}
@@ -616,6 +621,7 @@ export default function CreativeStudio({ skus, branches, onSaveAsset }: Creative
                                         width={el.width}
                                         height={el.height}
                                         onMouseDown={(e) => handleMouseDown(e, el.id)}
+                                        onClick={(e) => e.stopPropagation()}
                                         style={{ cursor: cursorStyle, outline: isSelected ? '2px solid #3b82f6' : 'none' }}
                                         preserveAspectRatio="none"
                                     />
