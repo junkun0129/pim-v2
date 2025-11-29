@@ -2,12 +2,14 @@
 export interface Attribute {
   id: string;
   name: string;
+  unit?: string; // New: Unit (e.g., cm, kg, GB)
 }
 
 export interface AttributeSet {
   id: string;
   name: string;
   attributeIds: string[];
+  sharedAttributeIds?: string[]; // New: IDs of attributes that are defined at Series level
 }
 
 export interface Category {
@@ -120,7 +122,7 @@ export interface StockTransfer {
     date: string;
 }
 
-export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG' | 'PROJECTS' | 'CHANNEL_EXPORT' | 'ADMIN';
+export type ViewType = 'SKUs' | 'Series' | 'Categories' | 'Attributes' | 'Attribute Sets' | 'SKU_DETAIL' | 'SERIES_DETAIL' | 'Orders' | 'EC' | 'CREATIVE' | 'CATALOG' | 'PROJECTS' | 'CHANNEL_EXPORT' | 'ADMIN';
 
 // --- Creative Studio Types ---
 

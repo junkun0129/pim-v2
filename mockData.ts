@@ -13,28 +13,53 @@ export const MOCK_CATEGORIES: Category[] = [
 ];
 
 export const MOCK_ATTRIBUTES: Attribute[] = [
-    { id: 'attr1', name: 'サイズ' },
-    { id: 'attr2', name: '解像度' },
+    { id: 'attr1', name: 'サイズ', unit: 'inch' },
+    { id: 'attr2', name: '解像度', unit: 'px' },
     { id: 'attr3', name: 'チップ' },
-    { id: 'attr4', name: 'RAM' },
+    { id: 'attr4', name: 'RAM', unit: 'GB' },
     { id: 'attr5', name: 'CPU' },
-    { id: 'attr6', name: 'ストレージ' },
-    { id: 'attr7', name: 'ケースサイズ' },
+    { id: 'attr6', name: 'ストレージ', unit: 'GB' },
+    { id: 'attr7', name: 'ケースサイズ', unit: 'mm' },
     { id: 'attr8', name: '素材' },
     { id: 'attr9', name: 'カラー' },
 ];
 
 export const MOCK_ATTRIBUTE_SETS: AttributeSet[] = [
-    { id: 'as1', name: 'ディスプレイ仕様', attributeIds: ['attr1', 'attr2'] },
-    { id: 'as2', name: 'パフォーマンス', attributeIds: ['attr3', 'attr4'] },
-    { id: 'as3', name: 'ノートPC仕様', attributeIds: ['attr5', 'attr6'] },
-    { id: 'as4', name: 'スマートウォッチ仕様', attributeIds: ['attr7', 'attr8'] },
-    { id: 'as5', name: '基本バリエーション', attributeIds: ['attr9'] },
+    { 
+        id: 'as1', 
+        name: 'ディスプレイ仕様', 
+        attributeIds: ['attr1', 'attr2'], 
+        sharedAttributeIds: ['attr1', 'attr2'] // Display specs are usually shared by the series
+    },
+    { 
+        id: 'as2', 
+        name: 'パフォーマンス', 
+        attributeIds: ['attr3', 'attr4'],
+        sharedAttributeIds: ['attr3', 'attr4'] // Chip/RAM usually shared in base model
+    },
+    { 
+        id: 'as3', 
+        name: 'ノートPC仕様', 
+        attributeIds: ['attr5', 'attr6'],
+        sharedAttributeIds: ['attr5'] // CPU shared, Storage unique
+    },
+    { 
+        id: 'as4', 
+        name: 'スマートウォッチ仕様', 
+        attributeIds: ['attr7', 'attr8'],
+        sharedAttributeIds: [] 
+    },
+    { 
+        id: 'as5', 
+        name: '基本バリエーション', 
+        attributeIds: ['attr9'],
+        sharedAttributeIds: [] // Color is unique per SKU
+    },
 ];
 
 export const MOCK_SERIES: Series[] = [
-    { id: 'ser1', name: 'iPhone 14 シリーズ', childSkuIds: ['sku1', 'sku2'], categoryIds: ['cat4', 'cat5'], attributeSetIds: ['as1', 'as2', 'as5'], attributeValues: { 'attr1': '6.1インチ', 'attr2': '2532x1170', 'attr3': 'A15 Bionic', 'attr4': '6GB' }, imageUrl: 'https://placehold.co/400x400/94a3b8/ffffff?text=iPhone+14', assets: [] },
-    { id: 'ser2', name: 'MacBook Pro 14インチ', childSkuIds: ['sku3'], categoryIds: ['cat4', 'cat6'], attributeSetIds: ['as3', 'as5'], attributeValues: { 'attr5': 'M2 Pro', 'attr6': '512GB SSD'}, imageUrl: 'https://placehold.co/400x400/94a3b8/ffffff?text=MacBook', assets: [] },
+    { id: 'ser1', name: 'iPhone 14 シリーズ', childSkuIds: ['sku1', 'sku2'], categoryIds: ['cat4', 'cat5'], attributeSetIds: ['as1', 'as2', 'as5'], attributeValues: { 'attr1': '6.1', 'attr2': '2532x1170', 'attr3': 'A15 Bionic', 'attr4': '6' }, imageUrl: 'https://placehold.co/400x400/94a3b8/ffffff?text=iPhone+14', assets: [] },
+    { id: 'ser2', name: 'MacBook Pro 14インチ', childSkuIds: ['sku3'], categoryIds: ['cat4', 'cat6'], attributeSetIds: ['as3', 'as5'], attributeValues: { 'attr5': 'M2 Pro'}, imageUrl: 'https://placehold.co/400x400/94a3b8/ffffff?text=MacBook', assets: [] },
     { id: 'ser3', name: 'Pixel 7 シリーズ', childSkuIds: [], categoryIds: ['cat4', 'cat5'], attributeSetIds: ['as1', 'as2', 'as5'], attributeValues: {'attr3': 'Google Tensor G2'}, imageUrl: 'https://placehold.co/400x400/334155/ffffff?text=Pixel+7', assets: [] },
     { id: 'ser4', name: '激落ちくんシリーズ', childSkuIds: [], categoryIds: ['cat1', 'cat2', 'cat3'], attributeSetIds: [], attributeValues: {}, imageUrl: 'https://placehold.co/400x400/e2e8f0/64748b?text=Cleaners', assets: [] },
     { id: 'ser5', name: 'iPad Air (第5世代)', childSkuIds: [], categoryIds: ['cat4', 'cat7'], attributeSetIds: ['as1', 'as2', 'as5'], attributeValues: {'attr3': 'M1'}, imageUrl: 'https://placehold.co/400x400/a78bfa/ffffff?text=iPad+Air', assets: [] },
@@ -51,7 +76,7 @@ const baseSkus: Sku[] = [
         seriesId: 'ser1', 
         categoryIds: ['cat4', 'cat5'], 
         attributeSetIds: [], 
-        attributeValues: { 'attr9': 'Space Black', 'attr6': '128GB' }, 
+        attributeValues: { 'attr9': 'Space Black', 'attr6': '128' }, 
         imageUrl: 'https://placehold.co/400x400/111827/ffffff?text=iPhone+14+Pro+BLK',
         assets: [
             { id: 'a1', type: 'IMAGE', name: 'Main Product Image', url: 'https://placehold.co/400x400/111827/ffffff?text=iPhone+14+Pro+BLK', createdAt: '2023-10-01' },
@@ -59,8 +84,8 @@ const baseSkus: Sku[] = [
             { id: 'a3', type: 'FILE', name: 'Spec_Sheet_v2.pdf', url: '#', createdAt: '2023-10-03', size: '2.4 MB' }
         ]
     },
-    { id: 'sku2', name: 'iPhone 14 Blue', skuId: 'IP14-128-BLU', barcode: '4549995361234', price: 119800, seriesId: 'ser1', categoryIds: ['cat4', 'cat5'], attributeSetIds: [], attributeValues: { 'attr9': 'Blue', 'attr6': '128GB' }, assets: [] },
-    { id: 'sku3', name: 'MacBook Pro 14" M2 Pro SpaceGray', skuId: 'MBP14-M2P-512', barcode: '4549995365678', price: 288800, seriesId: 'ser2', categoryIds: ['cat4', 'cat6'], attributeSetIds: [], attributeValues: { 'attr9': 'Space Gray' }, assets: [] },
+    { id: 'sku2', name: 'iPhone 14 Blue', skuId: 'IP14-128-BLU', barcode: '4549995361234', price: 119800, seriesId: 'ser1', categoryIds: ['cat4', 'cat5'], attributeSetIds: [], attributeValues: { 'attr9': 'Blue', 'attr6': '128' }, assets: [] },
+    { id: 'sku3', name: 'MacBook Pro 14" M2 Pro SpaceGray', skuId: 'MBP14-M2P-512', barcode: '4549995365678', price: 288800, seriesId: 'ser2', categoryIds: ['cat4', 'cat6'], attributeSetIds: [], attributeValues: { 'attr9': 'Space Gray', 'attr6': '512' }, assets: [] },
     { id: 'sku4', name: '激落ちくん スポンジ', skuId: 'GEKI-001', barcode: '4903320579123', price: 380, seriesId: 'ser4', categoryIds: ['cat1', 'cat2', 'cat3'], attributeSetIds: [], attributeValues: {}, imageUrl: 'https://placehold.co/400x400/ffffff/000000?text=Sponge', assets: [] },
 ];
 
@@ -70,15 +95,15 @@ const generateBulkSkus = (): Sku[] => {
     
     // Pixel 7 Variations (10 items)
     const pxColors = ['Obsidian', 'Snow', 'Lemongrass', 'Hazel', 'Coral'];
-    const pxStorage = ['128GB', '256GB'];
+    const pxStorage = ['128', '256'];
     pxColors.forEach((color, i) => {
         pxStorage.forEach((storage, j) => {
             bulk.push({
                 id: `sku_px_${i}_${j}`,
-                name: `Pixel 7 ${color} ${storage}`,
+                name: `Pixel 7 ${color} ${storage}GB`,
                 skuId: `PXL7-${storage}-${color.substring(0,3).toUpperCase()}`,
                 barcode: `490000000001${i}${j}`,
-                price: storage === '128GB' ? 82500 : 97900,
+                price: storage === '128' ? 82500 : 97900,
                 seriesId: 'ser3',
                 categoryIds: ['cat4', 'cat5'],
                 attributeSetIds: [],
@@ -90,13 +115,13 @@ const generateBulkSkus = (): Sku[] => {
 
     // iPad Air Variations (15 items)
     const padColors = ['Space Gray', 'Starlight', 'Pink', 'Purple', 'Blue'];
-    const padStorage = ['64GB', '256GB', '512GB'];
+    const padStorage = ['64', '256', '512'];
     padColors.forEach((color, i) => {
         padStorage.forEach((storage, j) => {
             bulk.push({
                 id: `sku_pad_${i}_${j}`,
-                name: `iPad Air Wi-Fi ${storage} ${color}`,
-                skuId: `IPDA5-${storage.replace('GB','')}-${color.substring(0,3).toUpperCase()}`,
+                name: `iPad Air Wi-Fi ${storage}GB ${color}`,
+                skuId: `IPDA5-${storage}-${color.substring(0,3).toUpperCase()}`,
                 barcode: `490000000002${i}${j}`,
                 price: 92800 + (j * 20000),
                 seriesId: 'ser5',
@@ -120,7 +145,7 @@ const generateBulkSkus = (): Sku[] => {
             seriesId: 'ser4',
             categoryIds: ['cat1', 'cat2', 'cat3'],
             attributeSetIds: [],
-            attributeValues: { 'attr1': type === 'シート' ? `${i*5}枚入り` : '通常サイズ' },
+            attributeValues: { 'attr1': type === 'シート' ? `${i*5}` : '通常' },
             imageUrl: 'https://placehold.co/400x400/f1f5f9/475569?text=Clean'
         });
     }

@@ -1,11 +1,11 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import Input from './ui/Input';
 import Modal from './ui/Modal';
 import { ICONS } from '../constants';
-import type { Attribute, AttributeSet, Category, Series, Sku, Permission } from '../types';
+import type { Attribute, AttributeSet, Category, Series, Sku, Permission, Asset } from '../types';
 import Badge from './ui/Badge';
 import Select from './ui/Select';
 import { getCategoryPath } from '../utils';
@@ -20,8 +20,10 @@ interface GenericManagerProps {
     items: Item[];
     onAdd: (item: any) => void;
     onDelete: (id: string) => void;
-    onUpdateAttributeSet?: (setId: string, attributeIds: string[]) => void;
+    onUpdateAttributeSet?: (setId: string, attributeIds: string[], sharedAttributeIds: string[]) => void;
     onUpdateSeries?: (series: Series) => void;
+    onUpdateCategory?: (category: Category) => void;
+    onViewSeries?: (seriesId: string) => void;
     dataMap?: {
         categories: Category[];
         attributes: Attribute[];
@@ -45,7 +47,9 @@ const SeriesModal: React.FC<{
     const [attributeSetIds, setAttributeSetIds] = useState<string[]>([]);
     const [attributeValues, setAttributeValues] = useState<Record<string, string>>({});
     const [imageUrl, setImageUrl] = useState('');
+    const [assets, setAssets] = useState<Asset[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (seriesToEdit) {
@@ -54,28 +58,32 @@ const SeriesModal: React.FC<{
             setAttributeSetIds(seriesToEdit.attributeSetIds);
             setAttributeValues(seriesToEdit.attributeValues);
             setImageUrl(seriesToEdit.imageUrl || '');
+            setAssets(seriesToEdit.assets || []);
         } else {
             setName('');
             setCategoryIds([]);
             setAttributeSetIds([]);
             setAttributeValues({});
             setImageUrl('');
+            setAssets([]);
         }
     }, [seriesToEdit, isOpen]);
 
-    const relevantAttributes = useMemo(() => {
+    // Calculate "Shared" attributes based on selected sets
+    // Only attributes marked as 'shared' in the sets should be editable here
+    const sharedAttributes = useMemo(() => {
         if (!attributeSetIds.length) return [];
         const attrIds = new Set<string>();
+        
         attributeSetIds.forEach(setId => {
             const set = dataMap.attributeSets.find(s => s.id === setId);
-            set?.attributeIds.forEach(id => attrIds.add(id));
+            if (set && set.sharedAttributeIds) {
+                set.sharedAttributeIds.forEach(id => attrIds.add(id));
+            }
         });
+        
         return Array.from(attrIds).map(id => dataMap.attributes.find(a => a.id === id)).filter(Boolean) as Attribute[];
     }, [attributeSetIds, dataMap.attributeSets, dataMap.attributes]);
-
-    useEffect(() => {
-        const newValues: Record<string, string> = { ...attributeValues };
-    }, [relevantAttributes]);
 
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -103,6 +111,43 @@ const SeriesModal: React.FC<{
         }
     };
 
+    const handleAssetUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            setIsUploading(true);
+            try {
+                const newAssets: Asset[] = [];
+                for (let i = 0; i < e.target.files.length; i++) {
+                    const file = e.target.files[i];
+                    let url = '';
+                    
+                    if (APP_CONFIG.useMockData) {
+                        url = URL.createObjectURL(file);
+                    } else {
+                        url = await api.uploadImage(file);
+                    }
+
+                    newAssets.push({
+                        id: `asset-${Date.now()}-${i}`,
+                        type: file.type.startsWith('image/') ? 'IMAGE' : file.type.startsWith('video/') ? 'VIDEO' : 'FILE',
+                        name: file.name,
+                        url,
+                        createdAt: new Date().toISOString(),
+                        size: `${(file.size / 1024).toFixed(1)} KB`
+                    });
+                }
+                setAssets(prev => [...prev, ...newAssets]);
+            } catch (err) {
+                alert("アップロードに失敗しました");
+            } finally {
+                setIsUploading(false);
+            }
+        }
+    };
+
+    const handleRemoveAsset = (id: string) => {
+        setAssets(prev => prev.filter(a => a.id !== id));
+    };
+
     const handleSave = () => {
         if (name) {
             onSave({ 
@@ -110,7 +155,8 @@ const SeriesModal: React.FC<{
                 categoryIds, 
                 attributeSetIds, 
                 attributeValues, 
-                imageUrl: imageUrl || undefined 
+                imageUrl: imageUrl || undefined,
+                assets
             });
             onClose();
         }
@@ -122,7 +168,7 @@ const SeriesModal: React.FC<{
                 <Input label="シリーズ名" value={name} onChange={(e) => setName(e.target.value)} required />
                 
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">画像</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">代表画像 (サムネイル)</label>
                     <div className="mt-1 flex items-center gap-4">
                         <span className="h-20 w-20 rounded-md overflow-hidden bg-slate-200 dark:bg-slate-700 relative">
                              {isUploading ? (
@@ -149,6 +195,35 @@ const SeriesModal: React.FC<{
                     </div>
                 </div>
 
+                <div>
+                    <div className="flex justify-between items-center mb-1">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">アセット (資料・動画等)</label>
+                        <button 
+                            type="button" 
+                            onClick={() => fileInputRef.current?.click()} 
+                            className="text-xs text-blue-600 hover:underline"
+                        >
+                            + 追加
+                        </button>
+                    </div>
+                    <input type="file" ref={fileInputRef} onChange={handleAssetUpload} className="hidden" multiple />
+                    {assets.length > 0 ? (
+                        <div className="space-y-2 max-h-40 overflow-y-auto border border-zinc-200 dark:border-zinc-700 rounded p-2">
+                            {assets.map(asset => (
+                                <div key={asset.id} className="flex items-center justify-between text-xs bg-slate-50 dark:bg-zinc-800 p-2 rounded">
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <Badge color="gray">{asset.type}</Badge>
+                                        <span className="truncate">{asset.name}</span>
+                                    </div>
+                                    <button onClick={() => handleRemoveAsset(asset.id)} className="text-red-500 hover:text-red-700">×</button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-xs text-slate-400 bg-slate-50 dark:bg-zinc-800 p-2 rounded text-center">アセットなし</div>
+                    )}
+                </div>
+
                 <Select label="カテゴリ" multiple value={categoryIds} onChange={(e) => setCategoryIds(Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value))}>
                      {dataMap.categories.map(c => <option key={c.id} value={c.id}>{getCategoryPath(c.id, dataMap.categories)}</option>)}
                 </Select>
@@ -156,16 +231,18 @@ const SeriesModal: React.FC<{
                     {dataMap.attributeSets.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </Select>
                 
-                {relevantAttributes.length > 0 && (
+                {sharedAttributes.length > 0 && (
                     <div className="space-y-3 pt-2 border-t dark:border-slate-600">
-                        <h4 className="font-semibold">属性値</h4>
-                        {relevantAttributes.map(attr => (
-                            <Input
-                                key={attr.id}
-                                label={attr.name}
-                                value={attributeValues[attr.id] || ''}
-                                onChange={(e) => setAttributeValues(prev => ({ ...prev, [attr.id]: e.target.value }))}
-                            />
+                        <h4 className="font-semibold text-sm">共通属性値 (全SKUに適用)</h4>
+                        {sharedAttributes.map(attr => (
+                            <div key={attr.id} className="flex items-center gap-2">
+                                <Input
+                                    label={`${attr.name} (${attr.unit || '-'})`}
+                                    value={attributeValues[attr.id] || ''}
+                                    onChange={(e) => setAttributeValues(prev => ({ ...prev, [attr.id]: e.target.value }))}
+                                    className="flex-1"
+                                />
+                            </div>
                         ))}
                     </div>
                 )}
@@ -186,9 +263,20 @@ const CategoryModal: React.FC<{
     onClose: () => void;
     onSave: (category: { name: string; parentId?: string }) => void;
     categories: Category[];
-}> = ({ isOpen, onClose, onSave, categories }) => {
+    categoryToEdit?: Category;
+}> = ({ isOpen, onClose, onSave, categories, categoryToEdit }) => {
     const [name, setName] = useState('');
     const [parentId, setParentId] = useState('');
+
+    useEffect(() => {
+        if (categoryToEdit) {
+            setName(categoryToEdit.name);
+            setParentId(categoryToEdit.parentId || '');
+        } else {
+            setName('');
+            setParentId('');
+        }
+    }, [categoryToEdit, isOpen]);
 
     const handleSave = () => {
         if (name) {
@@ -206,15 +294,17 @@ const CategoryModal: React.FC<{
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} title="新規カテゴリを追加">
+        <Modal isOpen={isOpen} onClose={handleClose} title={categoryToEdit ? "カテゴリ名を編集" : "新規カテゴリを追加"}>
             <div className="space-y-4">
                 <Input label="カテゴリ名" value={name} onChange={(e) => setName(e.target.value)} required />
-                <Select label="親カテゴリ (任意)" value={parentId} onChange={(e) => setParentId(e.target.value)}>
-                    <option value="">(なし)</option>
-                    {categories.map(c => (
-                        <option key={c.id} value={c.id}>{getCategoryPath(c.id, categories)}</option>
-                    ))}
-                </Select>
+                {!categoryToEdit && (
+                    <Select label="親カテゴリ (任意)" value={parentId} onChange={(e) => setParentId(e.target.value)}>
+                        <option value="">(なし)</option>
+                        {categories.map(c => (
+                            <option key={c.id} value={c.id}>{getCategoryPath(c.id, categories)}</option>
+                        ))}
+                    </Select>
+                )}
                 <div className="flex justify-end gap-2 pt-2">
                     <Button variant="secondary" onClick={handleClose}>キャンセル</Button>
                     <Button onClick={handleSave}>保存</Button>
@@ -229,33 +319,114 @@ const CategoryNode: React.FC<{
     category: Category;
     allCategories: Category[];
     onDelete: (id: string) => void;
+    onEdit: (cat: Category) => void;
+    onAddChild: (data: { name: string; parentId: string }) => void; // New prop for inline create
     canDelete: boolean;
-}> = ({ category, allCategories, onDelete, canDelete }) => {
+    canEdit: boolean;
+}> = ({ category, allCategories, onDelete, onEdit, onAddChild, canDelete, canEdit }) => {
     const children = allCategories.filter(c => c.parentId === category.id);
+    const [isHovered, setIsHovered] = useState(false);
+    const [isCreatingChild, setIsCreatingChild] = useState(false);
+    const [newChildName, setNewChildName] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isCreatingChild && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [isCreatingChild]);
+
+    const handleCreateSubmit = () => {
+        if (newChildName.trim()) {
+            onAddChild({ name: newChildName, parentId: category.id });
+            setNewChildName('');
+            setIsCreatingChild(false);
+        } else {
+            setIsCreatingChild(false);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') handleCreateSubmit();
+        if (e.key === 'Escape') {
+            setIsCreatingChild(false);
+            setNewChildName('');
+        }
+    };
     
     return (
         <div className="mb-2">
-            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition-colors">
-                <span className="font-medium text-slate-800 dark:text-white flex items-center">
+            <div 
+                className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-sky-300 dark:hover:border-sky-600 transition-colors group relative"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+            >
+                <div className="flex items-center gap-2">
                     {children.length > 0 && (
-                        <span className="mr-2 text-slate-400">
+                        <span className="text-slate-400">
                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </span>
                     )}
-                    {category.name}
-                </span>
+                    <span className="font-medium text-slate-800 dark:text-white">{category.name}</span>
+                    
+                    {/* Inline Create Button */}
+                    {isHovered && canEdit && (
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setIsCreatingChild(true); }}
+                            className="ml-2 w-6 h-6 rounded-full bg-sky-100 hover:bg-sky-200 text-sky-600 flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100 shadow-sm"
+                            title="子カテゴリを追加"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                    )}
+                </div>
+
                 <div className="flex items-center gap-2">
+                    {canEdit && (
+                        <Button onClick={() => onEdit(category)} variant="secondary" size="sm" className="px-2 py-1 h-7">
+                            編集
+                        </Button>
+                    )}
                     {canDelete && (
-                        <Button onClick={() => onDelete(category.id)} variant="danger" size="sm">
+                        <Button onClick={() => onDelete(category.id)} variant="danger" size="sm" className="px-2 py-1 h-7">
                             {ICONS.trash}
                         </Button>
                     )}
                 </div>
             </div>
+            
+            {/* Inline Input for New Child */}
+            {isCreatingChild && (
+                <div className="ml-6 mt-2 pl-4 border-l-2 border-slate-300 dark:border-slate-600">
+                    <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-zinc-800 rounded border border-blue-200 animate-fade-in">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" className="text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={newChildName}
+                            onChange={(e) => setNewChildName(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            onBlur={handleCreateSubmit}
+                            className="bg-transparent border-none focus:ring-0 text-sm w-full p-0"
+                            placeholder="カテゴリ名を入力..."
+                        />
+                    </div>
+                </div>
+            )}
+
             {children.length > 0 && (
                 <div className="ml-6 mt-2 pl-4 border-l-2 border-slate-300 dark:border-slate-600">
                     {children.map(child => (
-                        <CategoryNode key={child.id} category={child} allCategories={allCategories} onDelete={onDelete} canDelete={canDelete} />
+                        <CategoryNode 
+                            key={child.id} 
+                            category={child} 
+                            allCategories={allCategories} 
+                            onDelete={onDelete} 
+                            onEdit={onEdit} 
+                            onAddChild={onAddChild}
+                            canDelete={canDelete} 
+                            canEdit={canEdit} 
+                        />
                     ))}
                 </div>
             )}
@@ -269,17 +440,23 @@ interface AttributeFilter {
     value: string;
 }
 
-export default function GenericManager({ title, items, onAdd, onDelete, onUpdateAttributeSet, onUpdateSeries, dataMap, userPermissions }: GenericManagerProps) {
+export default function GenericManager({ title, items, onAdd, onDelete, onUpdateAttributeSet, onUpdateSeries, onUpdateCategory, onViewSeries, dataMap, userPermissions }: GenericManagerProps) {
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+    
+    // Create/Edit Item State
     const [newItemName, setNewItemName] = useState('');
+    const [newItemUnit, setNewItemUnit] = useState(''); // For Attribute
 
     const [isAttributeModalOpen, setIsAttributeModalOpen] = useState(false);
     const [editingSet, setEditingSet] = useState<AttributeSet | null>(null);
     const [editingSeries, setEditingSeries] = useState<Series | undefined>(undefined);
+    const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
     
-    // Filter State for Series
-    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    // General Search State
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Advanced Filter State for Series
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [categoryFilter, setCategoryFilter] = useState('');
     const [attributeFilters, setAttributeFilters] = useState<AttributeFilter[]>([]);
     const [targetAttrId, setTargetAttrId] = useState('');
@@ -290,10 +467,40 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
     const canEdit = userPermissions.includes('MASTER_EDIT');
     const canDelete = userPermissions.includes('MASTER_DELETE');
 
+    // Filter Items based on View
+    const filteredItems = useMemo(() => {
+        return items.filter((item: any) => {
+            const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+            if (!matchesSearch) return false;
+
+            // Series specific advanced filters
+            if (title === 'シリーズ') {
+                const series = item as Series;
+                const categoryMatch = categoryFilter ? series.categoryIds.includes(categoryFilter) : true;
+                if (!categoryMatch) return false;
+
+                if (attributeFilters.length > 0) {
+                    const matchesAttributes = attributeFilters.every(filter => {
+                        const val = series.attributeValues[filter.attributeId] || '';
+                        return val.toLowerCase().includes(filter.value.toLowerCase());
+                    });
+                    if (!matchesAttributes) return false;
+                }
+            }
+            return true;
+        });
+    }, [items, searchTerm, title, categoryFilter, attributeFilters]);
+
+
     const handleSaveItem = () => {
         if (newItemName.trim()) {
-            onAdd({ name: newItemName });
+            if (title === '属性') {
+                onAdd({ name: newItemName, unit: newItemUnit });
+            } else {
+                onAdd({ name: newItemName });
+            }
             setNewItemName('');
+            setNewItemUnit('');
             setIsItemModalOpen(false);
         }
     };
@@ -307,6 +514,20 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
         setEditingSeries(undefined);
     };
 
+    const handleSaveCategory = (catData: { name: string, parentId?: string }) => {
+        if (editingCategory && onUpdateCategory) {
+            onUpdateCategory({ ...editingCategory, name: catData.name });
+        } else {
+            onAdd(catData);
+        }
+        setEditingCategory(undefined);
+    };
+
+    // Helper for inline category creation from tree
+    const handleAddChildCategory = (catData: { name: string, parentId: string }) => {
+        onAdd(catData);
+    };
+
     const openSeriesCreate = () => {
         setEditingSeries(undefined);
         setIsItemModalOpen(true);
@@ -317,14 +538,19 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
         setIsItemModalOpen(true);
     };
 
+    const openCategoryEdit = (cat: Category) => {
+        setEditingCategory(cat);
+        setIsItemModalOpen(true);
+    };
+
     const openAttributeModal = (set: AttributeSet) => {
         setEditingSet(set);
         setIsAttributeModalOpen(true);
     };
 
-    const handleUpdateAttributeSet = (updatedIds: string[]) => {
+    const handleUpdateAttributeSet = (updatedIds: string[], sharedIds: string[]) => {
         if (editingSet && onUpdateAttributeSet) {
-            onUpdateAttributeSet(editingSet.id, updatedIds);
+            onUpdateAttributeSet(editingSet.id, updatedIds, sharedIds);
         }
         setIsAttributeModalOpen(false);
         setEditingSet(null);
@@ -346,29 +572,80 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
     
     const singularTitle = title === 'シリーズ' ? 'シリーズ' : (title.endsWith('s') ? title.slice(0, -1) : title);
 
+    const renderSearchBar = () => (
+        <div className="relative flex-grow max-w-md">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400">
+                {ICONS.search}
+            </span>
+            <input
+                type="text"
+                placeholder={`${title}を検索...`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm focus:ring-1 focus:ring-zinc-500 outline-none"
+            />
+        </div>
+    );
+
     const renderSimpleList = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {items.map(item => (
-                <Card key={item.id} className="flex justify-between items-center">
-                    <span className="font-semibold text-slate-800 dark:text-white">{item.name}</span>
-                    {canDelete && (
-                        <Button onClick={() => onDelete(item.id)} variant="danger" size="sm">
-                            {ICONS.trash}
-                        </Button>
-                    )}
-                </Card>
-            ))}
+            {filteredItems.map(item => {
+                // Determine display info based on type
+                const attr = title === '属性' ? (item as Attribute) : null;
+                return (
+                    <Card key={item.id} className="flex justify-between items-center">
+                        <div className="flex flex-col">
+                            <span className="font-semibold text-slate-800 dark:text-white">{item.name}</span>
+                            {attr && attr.unit && <span className="text-xs text-slate-400">単位: {attr.unit}</span>}
+                        </div>
+                        {canDelete && (
+                            <Button onClick={() => onDelete(item.id)} variant="danger" size="sm">
+                                {ICONS.trash}
+                            </Button>
+                        )}
+                    </Card>
+                )
+            })}
         </div>
     );
     
     const renderCategoryTree = () => {
-        const categories = items as Category[];
-        const rootCategories = categories.filter(c => !c.parentId);
+        const categories = filteredItems as Category[]; // Note: Search on Tree is tricky, here we just filter nodes but keep tree structure if possible or just list.
+        
+        if (searchTerm) {
+             return (
+                <div className="space-y-2">
+                    {categories.map(cat => (
+                        <CategoryNode 
+                            key={cat.id} 
+                            category={cat} 
+                            allCategories={items as Category[]} 
+                            onDelete={onDelete} 
+                            onEdit={openCategoryEdit}
+                            onAddChild={handleAddChildCategory}
+                            canDelete={canDelete} 
+                            canEdit={canEdit} 
+                        />
+                    ))}
+                </div>
+             )
+        }
+
+        const rootCategories = (items as Category[]).filter(c => !c.parentId);
         
         return (
             <div className="space-y-2">
                 {rootCategories.map(root => (
-                    <CategoryNode key={root.id} category={root} allCategories={categories} onDelete={onDelete} canDelete={canDelete} />
+                    <CategoryNode 
+                        key={root.id} 
+                        category={root} 
+                        allCategories={items as Category[]} 
+                        onDelete={onDelete} 
+                        onEdit={openCategoryEdit}
+                        onAddChild={handleAddChildCategory}
+                        canDelete={canDelete} 
+                        canEdit={canEdit} 
+                    />
                 ))}
             </div>
         );
@@ -376,7 +653,7 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
 
     const renderAttributeSets = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {items.map(item => {
+            {filteredItems.map(item => {
                 const set = item as AttributeSet;
                 return (
                     <Card key={set.id} className="flex flex-col justify-between">
@@ -389,9 +666,17 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                                 <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400">属性:</h4>
                                 {set.attributeIds.length > 0 ? (
                                     <div className="flex flex-wrap items-start gap-1">
-                                        {set.attributeIds.map(attrId => (
-                                            <Badge key={attrId} color="gray">{dataMap?.attributes.find(a => a.id === attrId)?.name}</Badge>
-                                        ))}
+                                        {set.attributeIds.map(attrId => {
+                                            const isShared = set.sharedAttributeIds?.includes(attrId);
+                                            const attr = dataMap?.attributes.find(a => a.id === attrId);
+                                            return (
+                                                <Badge key={attrId} color={isShared ? 'purple' : 'gray'} title={isShared ? 'シリーズ共通属性' : 'SKU独自属性'}>
+                                                    {attr?.name}
+                                                    {attr?.unit ? ` (${attr.unit})` : ''}
+                                                    {isShared && ' ★'}
+                                                </Badge>
+                                            );
+                                        })}
                                     </div>
                                 ) : (
                                     <p className="text-xs text-slate-400 italic">属性がありません</p>
@@ -410,25 +695,7 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
     );
     
     const renderSeries = () => {
-        let seriesItems = items as Series[];
-
-        // Filter Logic for Series
-        seriesItems = seriesItems.filter(series => {
-            const nameMatch = series.name.toLowerCase().includes(searchTerm.toLowerCase());
-            const categoryMatch = categoryFilter ? series.categoryIds.includes(categoryFilter) : true;
-            
-            if (!nameMatch || !categoryMatch) return false;
-
-            if (attributeFilters.length > 0) {
-                const matchesAttributes = attributeFilters.every(filter => {
-                    const val = series.attributeValues[filter.attributeId] || '';
-                    return val.toLowerCase().includes(filter.value.toLowerCase());
-                });
-                if (!matchesAttributes) return false;
-            }
-            return true;
-        });
-
+        let seriesItems = filteredItems as Series[];
         const activeFilterCount = (categoryFilter ? 1 : 0) + attributeFilters.length;
 
         return(
@@ -501,7 +768,7 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                                     <th scope="col" className="px-6 py-3">画像</th>
                                     <th scope="col" className="px-6 py-3">名前</th>
                                     <th scope="col" className="px-6 py-3">カテゴリ</th>
-                                    <th scope="col" className="px-6 py-3">属性値</th>
+                                    <th scope="col" className="px-6 py-3">属性値 (共通)</th>
                                     <th scope="col" className="px-6 py-3">操作</th>
                                 </tr>
                             </thead>
@@ -524,7 +791,11 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                                                         </div>
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{series.name}</td>
+                                                <td className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">
+                                                    <button onClick={() => onViewSeries && onViewSeries(series.id)} className="hover:underline text-blue-600 dark:text-blue-400 font-bold">
+                                                        {series.name}
+                                                    </button>
+                                                </td>
                                                 <td className="px-6 py-4 max-w-xs">
                                                     <div className="flex gap-1 overflow-x-auto no-scrollbar">
                                                         {series.categoryIds.map(id => <Badge key={id} className="whitespace-nowrap">{getCategoryPath(id, dataMap?.categories || [])}</Badge>)}
@@ -532,15 +803,20 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                                                 </td>
                                                 <td className="px-6 py-4 max-w-xs">
                                                     <div className="flex gap-1 overflow-x-auto no-scrollbar">
-                                                        {allAttributeIds.map(attrId => (
-                                                            <Badge key={attrId} color="green" className="whitespace-nowrap">
-                                                                {dataMap?.attributes.find(a => a.id === attrId)?.name}: {series.attributeValues[attrId] || 'N/A'}
-                                                            </Badge>
-                                                        ))}
+                                                        {Object.entries(series.attributeValues).map(([attrId, val]) => {
+                                                            const attr = dataMap?.attributes.find(a => a.id === attrId);
+                                                            if (!val) return null;
+                                                            return (
+                                                                <Badge key={attrId} color="purple" className="whitespace-nowrap">
+                                                                    {attr?.name}: {val}
+                                                                </Badge>
+                                                            )
+                                                        })}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center gap-2">
+                                                        <Button onClick={() => onViewSeries && onViewSeries(series.id)} variant="secondary" size="sm">詳細</Button>
                                                         {canEdit && <Button onClick={() => openSeriesEdit(series)} variant="secondary" size="sm">編集</Button>}
                                                         {canDelete && <Button onClick={() => onDelete(series.id)} variant="danger" size="sm">{ICONS.trash}</Button>}
                                                     </div>
@@ -633,12 +909,15 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <h1 className="text-3xl font-bold text-slate-800 dark:text-white">{title}</h1>
-                {canCreate && (
-                    <Button onClick={() => title === 'シリーズ' ? openSeriesCreate() : setIsItemModalOpen(true)}>
-                        {ICONS.plus}
-                        新規{singularTitle}を追加
-                    </Button>
-                )}
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    {title !== 'シリーズ' && renderSearchBar()}
+                    {canCreate && (
+                        <Button onClick={() => title === 'シリーズ' ? openSeriesCreate() : setIsItemModalOpen(true)} className="whitespace-nowrap">
+                            {ICONS.plus}
+                            新規追加
+                        </Button>
+                    )}
+                </div>
             </div>
             
             {(items.length > 0 || title === 'シリーズ') ? renderContent() : (
@@ -656,6 +935,14 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
                             onChange={(e) => setNewItemName(e.target.value)}
                             placeholder={`${singularTitle}名を入力`}
                         />
+                        {title === '属性' && (
+                            <Input
+                                label="単位 (Unit)"
+                                value={newItemUnit}
+                                onChange={(e) => setNewItemUnit(e.target.value)}
+                                placeholder="例: cm, kg, GB (任意)"
+                            />
+                        )}
                         <div className="flex justify-end gap-2">
                             <Button variant="secondary" onClick={() => setIsItemModalOpen(false)}>キャンセル</Button>
                             <Button onClick={handleSaveItem}>保存</Button>
@@ -675,7 +962,13 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
             )}
             
             {title === 'カテゴリ' && (
-                <CategoryModal isOpen={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} onSave={onAdd} categories={items as Category[]} />
+                <CategoryModal 
+                    isOpen={isItemModalOpen} 
+                    onClose={() => setIsItemModalOpen(false)} 
+                    onSave={handleSaveCategory} 
+                    categories={items as Category[]}
+                    categoryToEdit={editingCategory}
+                />
             )}
 
             {title === '属性セット' && editingSet && (
@@ -695,26 +988,66 @@ export default function GenericManager({ title, items, onAdd, onDelete, onUpdate
 const AttributeSetEditModalContent: React.FC<{
     set: AttributeSet;
     allAttributes: Attribute[];
-    onSave: (selectedIds: string[]) => void;
+    onSave: (selectedIds: string[], sharedIds: string[]) => void;
     onClose: () => void;
 }> = ({ set, allAttributes, onSave, onClose }) => {
     const [selectedIds, setSelectedIds] = useState(set.attributeIds);
+    const [sharedIds, setSharedIds] = useState(set.sharedAttributeIds || []);
 
     const handleSave = () => {
-        onSave(selectedIds);
+        onSave(selectedIds, sharedIds);
     };
 
+    const toggleShared = (id: string) => {
+        if (sharedIds.includes(id)) {
+            setSharedIds(prev => prev.filter(sid => sid !== id));
+        } else {
+            setSharedIds(prev => [...prev, id]);
+        }
+    };
+
+    // Filter attributes that are currently selected to show in the shared toggle list
+    const selectedAttributes = allAttributes.filter(a => selectedIds.includes(a.id));
+
     return (
-        <div className="space-y-4">
-            <Select 
-                label="利用可能な属性" 
-                multiple 
-                value={selectedIds} 
-                onChange={(e) => setSelectedIds(Array.from(e.target.selectedOptions, (opt: HTMLOptionElement) => opt.value))}>
-                {allAttributes.map(attr => (
-                    <option key={attr.id} value={attr.id}>{attr.name}</option>
-                ))}
-            </Select>
+        <div className="space-y-6">
+            <div>
+                <Select 
+                    label="利用可能な属性 (全選択)" 
+                    multiple 
+                    value={selectedIds} 
+                    onChange={(e) => setSelectedIds(Array.from(e.target.selectedOptions, (opt: HTMLOptionElement) => opt.value))}
+                    className="h-40"
+                >
+                    {allAttributes.map(attr => (
+                        <option key={attr.id} value={attr.id}>{attr.name}</option>
+                    ))}
+                </Select>
+            </div>
+
+            {selectedAttributes.length > 0 && (
+                <div className="border-t pt-4 dark:border-zinc-700">
+                    <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase tracking-wide">
+                        シリーズ共通属性の設定
+                    </label>
+                    <p className="text-xs text-slate-400 mb-3">チェックを入れた属性はシリーズ作成時に値を設定し、全SKUで共有されます。</p>
+                    <div className="max-h-40 overflow-y-auto space-y-2 border border-zinc-200 dark:border-zinc-700 rounded p-2">
+                        {selectedAttributes.map(attr => (
+                            <label key={attr.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-800 p-1 rounded">
+                                <input 
+                                    type="checkbox" 
+                                    checked={sharedIds.includes(attr.id)} 
+                                    onChange={() => toggleShared(attr.id)}
+                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="text-sm text-slate-700 dark:text-slate-300">{attr.name}</span>
+                                {attr.unit && <span className="text-xs text-slate-400">({attr.unit})</span>}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="flex justify-end gap-2">
                 <Button variant="secondary" onClick={onClose}>キャンセル</Button>
                 <Button onClick={handleSave}>保存</Button>

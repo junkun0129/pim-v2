@@ -36,33 +36,53 @@ export default function SkuModal({ isOpen, onClose, onSave, dataMap, sku }: SkuM
     const [isUploading, setIsUploading] = useState(false);
 
     const isSeriesSelected = !!seriesId;
+    const selectedSeries = dataMap.series.find(s => s.id === seriesId);
 
+    // When Series changes, reset non-series stuff
     useEffect(() => {
-        if (isSeriesSelected) {
-            setAttributeSetIds([]);
-            setAttributeValues({});
+        if (isSeriesSelected && selectedSeries) {
+            // Inherit from Series
+            setCategoryIds(selectedSeries.categoryIds);
+            setAttributeSetIds(selectedSeries.attributeSetIds);
+            // We don't overwrite attributeValues entirely, but we should clear values that are now shared?
+            // Actually, keep existing values for editing, but UI will hide shared ones.
+        } else if (!sku) { // Only reset if creating new and deselecting series
+             setAttributeSetIds([]);
+             setAttributeValues({});
         }
-    }, [seriesId]);
+    }, [seriesId, selectedSeries, sku]);
     
-    const relevantAttributes = useMemo(() => {
-        if (isSeriesSelected || !attributeSetIds.length) return [];
-        const attrIds = new Set<string>();
-        attributeSetIds.forEach(setId => {
-            const set = dataMap.attributeSets.find(s => s.id === setId);
-            set?.attributeIds.forEach(id => attrIds.add(id));
-        });
-        return Array.from(attrIds).map(id => dataMap.attributes.find(a => a.id === id)).filter(Boolean) as Attribute[];
-    }, [attributeSetIds, isSeriesSelected, dataMap.attributeSets, dataMap.attributes]);
+    // Calculate which attributes are editable (Unique) vs Read-only (Shared)
+    const attributeConfig = useMemo(() => {
+        const uniqueAttrs: Attribute[] = [];
+        const sharedAttrs: Attribute[] = [];
 
-    useEffect(() => {
-        if(!isSeriesSelected) {
-            const newValues: Record<string, string> = {};
-            relevantAttributes.forEach(attr => {
-                newValues[attr.id] = attributeValues[attr.id] || '';
-            });
-            setAttributeValues(newValues);
-        }
-    }, [relevantAttributes, isSeriesSelected]);
+        const activeSetIds = isSeriesSelected && selectedSeries ? selectedSeries.attributeSetIds : attributeSetIds;
+
+        activeSetIds.forEach(setId => {
+            const set = dataMap.attributeSets.find(s => s.id === setId);
+            if (set) {
+                set.attributeIds.forEach(attrId => {
+                    const attr = dataMap.attributes.find(a => a.id === attrId);
+                    if (!attr) return;
+
+                    const isShared = set.sharedAttributeIds?.includes(attrId);
+                    
+                    if (isSeriesSelected && isShared) {
+                        sharedAttrs.push(attr);
+                    } else {
+                        uniqueAttrs.push(attr);
+                    }
+                });
+            }
+        });
+
+        // Deduplicate
+        return {
+            unique: Array.from(new Set(uniqueAttrs)),
+            shared: Array.from(new Set(sharedAttrs))
+        };
+    }, [attributeSetIds, isSeriesSelected, selectedSeries, dataMap.attributeSets, dataMap.attributes]);
 
 
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,7 +122,7 @@ export default function SkuModal({ isOpen, onClose, onSave, dataMap, sku }: SkuM
                 price: price ? parseInt(price) : undefined,
                 seriesId: seriesId || undefined,
                 categoryIds,
-                attributeSetIds,
+                attributeSetIds: isSeriesSelected ? [] : attributeSetIds, // If series selected, sets are on series
                 attributeValues,
                 imageUrl: imageUrl || undefined,
             });
@@ -151,36 +171,54 @@ export default function SkuModal({ isOpen, onClose, onSave, dataMap, sku }: SkuM
                 </div>
 
                 <Select label="シリーズ (任意)" value={seriesId} onChange={(e) => setSeriesId(e.target.value)}>
-                    <option value="">なし</option>
+                    <option value="">なし (単独SKU)</option>
                     {dataMap.series.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </Select>
+                
+                {/* Categories - Read only if Series selected? No, usually inherited but maybe overridable. For now, let's allow edit but default to series */}
                 <Select label="カテゴリ" multiple value={categoryIds} onChange={(e) => setCategoryIds(Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value))}>
                      {dataMap.categories.map(c => <option key={c.id} value={c.id}>{getCategoryPath(c.id, dataMap.categories)}</option>)}
                 </Select>
-                <div>
-                    <Select 
-                        label="属性セット" 
-                        multiple 
-                        value={attributeSetIds} 
-                        onChange={(e) => setAttributeSetIds(Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value))}
-                        disabled={isSeriesSelected}
-                    >
-                        {dataMap.attributeSets.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                    </Select>
-                    {isSeriesSelected && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                            シリーズが選択されている場合、属性セットはシリーズから継承されます。
-                        </p>
-                    )}
-                </div>
+
+                {/* Attribute Sets Selection - Only if NO series selected */}
+                {!isSeriesSelected && (
+                    <div>
+                        <Select 
+                            label="属性セット" 
+                            multiple 
+                            value={attributeSetIds} 
+                            onChange={(e) => setAttributeSetIds(Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value))}
+                        >
+                            {dataMap.attributeSets.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                        </Select>
+                    </div>
+                )}
                 
-                {!isSeriesSelected && relevantAttributes.length > 0 && (
+                {/* Shared Attributes Display (Read Only) */}
+                {isSeriesSelected && attributeConfig.shared.length > 0 && selectedSeries && (
+                    <div className="bg-slate-50 dark:bg-zinc-800 p-3 rounded-lg border border-slate-200 dark:border-zinc-700">
+                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">共通属性 (シリーズ設定)</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                            {attributeConfig.shared.map(attr => (
+                                <div key={attr.id} className="text-sm">
+                                    <span className="text-slate-500 block text-xs">{attr.name}</span>
+                                    <span className="font-medium text-slate-800 dark:text-white">
+                                        {selectedSeries.attributeValues[attr.id] || '-'} {attr.unit}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Unique Attributes Input */}
+                {attributeConfig.unique.length > 0 && (
                     <div className="space-y-3 pt-3 border-t dark:border-slate-600">
-                         <h4 className="font-semibold">属性値</h4>
-                        {relevantAttributes.map(attr => (
+                         <h4 className="font-semibold text-sm">独自属性値</h4>
+                        {attributeConfig.unique.map(attr => (
                             <Input 
                                 key={attr.id}
-                                label={attr.name}
+                                label={`${attr.name} ${attr.unit ? `(${attr.unit})` : ''}`}
                                 value={attributeValues[attr.id] || ''}
                                 onChange={(e) => setAttributeValues(prev => ({...prev, [attr.id]: e.target.value}))}
                                 placeholder={`${attr.name}の値を入力`}

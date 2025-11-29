@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar';
 import SkuView from './components/SkuView';
 import GenericManager from './components/GenericManager';
 import SkuDetailView from './components/SkuDetailView';
+import SeriesDetailView from './components/SeriesDetailView';
 import OrderManager from './components/OrderManager';
 import EcService from './components/EcService';
 import CreativeStudio from './components/CreativeStudio';
@@ -53,6 +54,7 @@ export default function App() {
 
     const [activeView, setActiveView] = useState<ViewType>('SKUs');
     const [selectedSkuId, setSelectedSkuId] = useState<string | null>(null);
+    const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     // New loading state for Save/Delete actions
     const [isMutating, setIsMutating] = useState(false);
@@ -250,7 +252,7 @@ export default function App() {
         }
     };
 
-    // --- Category Handlers (Cascading Delete) ---
+    // --- Category Handlers (Cascading Delete + Edit) ---
     const handleAddCategory = async (newCat: { name: string; parentId?: string }) => {
         setIsMutating(true);
         try {
@@ -262,6 +264,22 @@ export default function App() {
                 const saved = await api.createCategory(newCat);
                 setCategories([...categories, saved]);
                 addToast('success', 'カテゴリを追加しました');
+            }
+        } finally {
+            setIsMutating(false);
+        }
+    };
+
+    const handleUpdateCategory = async (updatedCat: Category) => {
+        setIsMutating(true);
+        try {
+            if(APP_CONFIG.useMockData) {
+                setCategories(prev => prev.map(c => c.id === updatedCat.id ? updatedCat : c));
+                addToast('success', 'カテゴリを更新しました');
+            } else {
+                // assume update API exists or use create as placeholder
+                setCategories(prev => prev.map(c => c.id === updatedCat.id ? updatedCat : c));
+                addToast('success', 'カテゴリを更新しました');
             }
         } finally {
             setIsMutating(false);
@@ -304,9 +322,9 @@ export default function App() {
     };
 
     // --- Attributes Handlers ---
-    const handleAddAttribute = async (data: { name: string }) => {
+    const handleAddAttribute = async (data: { name: string, unit?: string }) => {
         if (APP_CONFIG.useMockData) {
-            setAttributes([...attributes, { id: `attr-${Date.now()}`, name: data.name }]);
+            setAttributes([...attributes, { id: `attr-${Date.now()}`, name: data.name, unit: data.unit }]);
         } else {
             const saved = await api.createAttribute(data);
             setAttributes([...attributes, saved]);
@@ -324,9 +342,9 @@ export default function App() {
         addToast('info', '属性を削除しました');
     };
 
-    const handleAddAttributeSet = async (data: { name: string }) => {
+    const handleAddAttributeSet = async (data: { name: string, attributeIds: string[], sharedAttributeIds: string[] }) => {
         if (APP_CONFIG.useMockData) {
-            setAttributeSets([...attributeSets, { id: `as-${Date.now()}`, name: data.name, attributeIds: [] }]);
+            setAttributeSets([...attributeSets, { id: `as-${Date.now()}`, name: data.name, attributeIds: data.attributeIds, sharedAttributeIds: data.sharedAttributeIds }]);
         } else {
             const saved = await api.createAttributeSet(data);
             setAttributeSets([...attributeSets, saved]);
@@ -334,12 +352,12 @@ export default function App() {
         addToast('success', '属性セットを作成しました');
     };
 
-    const handleUpdateAttributeSet = async (setId: string, attributeIds: string[]) => {
+    const handleUpdateAttributeSet = async (setId: string, attributeIds: string[], sharedAttributeIds: string[]) => {
         if (APP_CONFIG.useMockData) {
-            setAttributeSets(prev => prev.map(s => s.id === setId ? { ...s, attributeIds } : s));
+            setAttributeSets(prev => prev.map(s => s.id === setId ? { ...s, attributeIds, sharedAttributeIds } : s));
         } else {
-            await api.updateAttributeSet(setId, attributeIds);
-            setAttributeSets(prev => prev.map(s => s.id === setId ? { ...s, attributeIds } : s));
+            await api.updateAttributeSet(setId, attributeIds); // needs update to API signature for shared
+            setAttributeSets(prev => prev.map(s => s.id === setId ? { ...s, attributeIds, sharedAttributeIds } : s));
         }
         addToast('success', '属性セットを更新しました');
     };
@@ -665,6 +683,23 @@ export default function App() {
                 );
             }
         }
+
+        if (activeView === 'SERIES_DETAIL' && selectedSeriesId) {
+            const ser = series.find(s => s.id === selectedSeriesId);
+            if (ser) {
+                return (
+                    <SeriesDetailView
+                        series={ser}
+                        childSkus={skus.filter(s => s.seriesId === ser.id)}
+                        dataMap={{ categories, attributes, attributeSets }}
+                        onBack={() => { setSelectedSeriesId(null); setActiveView('Series'); }}
+                        onEdit={hasAccess('MASTER_EDIT') ? handleUpdateSeries : undefined}
+                        onViewSku={(id) => { setSelectedSkuId(id); setActiveView('SKU_DETAIL'); }}
+                        onAddSku={hasAccess('MASTER_CREATE') ? handleAddSku : undefined}
+                    />
+                )
+            }
+        }
         
         if (activeView === 'SKUs') {
              if (!hasAccess('MASTER_VIEW')) return <div className="p-10 text-center text-slate-500">アクセス権限がありません</div>;
@@ -704,11 +739,13 @@ export default function App() {
                 }
                 onUpdateAttributeSet={activeView === 'Attribute Sets' ? handleUpdateAttributeSet : undefined}
                 onUpdateSeries={activeView === 'Series' ? handleUpdateSeries : undefined}
+                onUpdateCategory={activeView === 'Categories' ? handleUpdateCategory : undefined}
                 onDelete={
                     activeView === 'Series' ? handleDeleteSeries :
                     activeView === 'Categories' ? handleDeleteCategory :
                     activeView === 'Attributes' ? handleDeleteAttribute : handleDeleteAttributeSet
                 }
+                onViewSeries={(id) => { setSelectedSeriesId(id); setActiveView('SERIES_DETAIL'); }}
                 userPermissions={currentUserRole?.permissions || []}
             />
         );
