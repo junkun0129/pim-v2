@@ -1,6 +1,12 @@
-
 import React, { useEffect } from 'react';
-import type { ToastMessage, ToastType } from '../../types';
+
+export type ToastType = 'success' | 'error' | 'info';
+
+export interface ToastMessage {
+    id: string;
+    type: ToastType;
+    message: string;
+}
 
 interface ToastProps {
     toast: ToastMessage;
