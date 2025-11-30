@@ -334,3 +334,12 @@ export interface AppNotification {
     timestamp: string;
     isRead: boolean;
 }
+
+// --- Toast Types ---
+export type ToastType = 'success' | 'error' | 'info';
+
+export interface ToastMessage {
+    id: string;
+    type: ToastType;
+    message: string;
+}
