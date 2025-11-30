@@ -1,4 +1,3 @@
-
 import { Sku, Series, Category, Attribute, AttributeSet } from './types';
 import { APP_CONFIG } from './config';
 
@@ -10,7 +9,6 @@ const headers = {
 
 async function handleResponse(response: Response) {
     if (!response.ok) {
-        // Try to parse the error message from the backend JSON body
         let errorMessage = response.statusText;
         try {
             const errorBody = await response.json();
@@ -18,7 +16,6 @@ async function handleResponse(response: Response) {
                 errorMessage = errorBody.error;
             }
         } catch (e) {
-            // If response isn't JSON, fall back to text
             const errorText = await response.text();
             if (errorText) errorMessage = errorText;
         }
@@ -42,20 +39,22 @@ export const api = {
 
     // --- Images (S3 Upload) ---
     uploadImage: async (file: File): Promise<string> => {
-        // NOTE: You need to implement a POST /upload endpoint in your API Gateway/Lambda
-        // that handles the S3 upload and returns { imageUrl: "https://..." }
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        // We do not set 'Content-Type': 'application/json' here because 
-        // the browser sets the correct multipart/form-data boundary automatically.
-        const response = await fetch(`${BASE_URL}/upload`, { 
+        // 1. Get Presigned URL
+        const presignResponse = await fetch(`${BASE_URL}/upload`, { 
             method: 'POST', 
-            body: formData 
+            headers,
+            body: JSON.stringify({ fileName: file.name, fileType: file.type }) 
         });
-        
-        const data = await handleResponse(response);
-        return data.imageUrl;
+        const { uploadUrl, imageUrl } = await handleResponse(presignResponse);
+
+        // 2. Upload directly to S3
+        await fetch(uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: { 'Content-Type': file.type }
+        });
+
+        return imageUrl;
     },
 
     // --- SKU ---
@@ -101,4 +100,23 @@ export const api = {
     
     deleteAttributeSet: (id: string) => 
         fetch(`${BASE_URL}/attribute-sets/${id}`, { method: 'DELETE', headers }).then(handleResponse),
+
+    // --- EXTENSIONS (OMS) ---
+    fetchOrders: () => fetch(`${BASE_URL}/orders`, { headers }).then(handleResponse),
+    createOrder: (data: any) => fetch(`${BASE_URL}/orders`, { method: 'POST', headers, body: JSON.stringify(data) }).then(handleResponse),
+    
+    fetchInventory: () => fetch(`${BASE_URL}/inventory`, { headers }).then(handleResponse),
+    
+    // --- EXTENSIONS (Projects) ---
+    fetchProjects: () => fetch(`${BASE_URL}/projects`, { headers }).then(handleResponse),
+    createProject: (data: any) => fetch(`${BASE_URL}/projects`, { method: 'POST', headers, body: JSON.stringify(data) }).then(handleResponse),
+    updateProject: (data: any) => fetch(`${BASE_URL}/projects/${data.id}`, { method: 'PUT', headers, body: JSON.stringify(data) }).then(handleResponse),
+
+    // --- EXTENSIONS (Catalogs) ---
+    fetchCatalogs: () => fetch(`${BASE_URL}/catalogs`, { headers }).then(handleResponse),
+    saveCatalog: (data: any) => fetch(`${BASE_URL}/catalogs`, { method: 'POST', headers, body: JSON.stringify(data) }).then(handleResponse), // Use POST for new/update simplicity or split
+    deleteCatalog: (id: string) => fetch(`${BASE_URL}/catalogs/${id}`, { method: 'DELETE', headers }).then(handleResponse),
+
+    // --- EXTENSIONS (System) ---
+    fetchUsers: () => fetch(`${BASE_URL}/users`, { headers }).then(handleResponse),
 };
