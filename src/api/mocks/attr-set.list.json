@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "statusCode": 200,
+  "data": [
+    {
+      "id": "as1",
+      "name": "ディスプレイ仕様",
+      "attributeIds": ["attr1", "attr2"],
+      "sharedAttributeIds": ["attr1", "attr2"]
+    },
+    {
+      "id": "as2",
+      "name": "パフォーマンス",
+      "attributeIds": ["attr3", "attr4"],
+      "sharedAttributeIds": ["attr3", "attr4"]
+    },
+    {
+      "id": "as3",
+      "name": "ノートPC仕様",
+      "attributeIds": ["attr5", "attr6"],
+      "sharedAttributeIds": ["attr5"]
+    },
+    {
+      "id": "as4",
+      "name": "スマートウォッチ仕様",
+      "attributeIds": ["attr7", "attr8"],
+      "sharedAttributeIds": []
+    },
+    {
+      "id": "as5",
+      "name": "基本バリエーション",
+      "attributeIds": ["attr9"],
+      "sharedAttributeIds": []
+    }
+  ]
+}

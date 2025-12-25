@@ -1,0 +1,80 @@
+{
+  "success": true,
+  "statusCode": 200,
+  "data": [
+    {
+      "id": "sku1",
+      "name": "iPhone 14 Pro SpaceBlack",
+      "skuId": "IP14P-128-BLK",
+      "barcode": "4549995359787",
+      "price": 149800,
+      "seriesId": "ser1",
+      "categoryIds": ["cat4", "cat5"],
+      "attributeSetIds": [],
+      "attributeValues": { "attr9": "Space Black", "attr6": "128" },
+      "imageUrl": "https://placehold.co/400x400/111827/ffffff?text=iPhone+14+Pro+BLK",
+      "assets": [
+        {
+          "id": "a1",
+          "type": "IMAGE",
+          "name": "Main Product Image",
+          "url": "https://placehold.co/400x400/111827/ffffff?text=iPhone+14+Pro+BLK",
+          "createdAt": "2023-10-01"
+        },
+        {
+          "id": "a2",
+          "type": "VIDEO",
+          "name": "Product Reveal Teaser",
+          "url": "https://www.w3schools.com/html/mov_bbb.mp4",
+          "createdAt": "2023-10-02",
+          "size": "15 MB"
+        },
+        {
+          "id": "a3",
+          "type": "FILE",
+          "name": "Spec_Sheet_v2.pdf",
+          "url": "#",
+          "createdAt": "2023-10-03",
+          "size": "2.4 MB"
+        }
+      ]
+    },
+    {
+      "id": "sku2",
+      "name": "iPhone 14 Blue",
+      "skuId": "IP14-128-BLU",
+      "barcode": "4549995361234",
+      "price": 119800,
+      "seriesId": "ser1",
+      "categoryIds": ["cat4", "cat5"],
+      "attributeSetIds": [],
+      "attributeValues": { "attr9": "Blue", "attr6": "128" },
+      "assets": []
+    },
+    {
+      "id": "sku3",
+      "name": "MacBook Pro 14\" M2 Pro SpaceGray",
+      "skuId": "MBP14-M2P-512",
+      "barcode": "4549995365678",
+      "price": 288800,
+      "seriesId": "ser2",
+      "categoryIds": ["cat4", "cat6"],
+      "attributeSetIds": [],
+      "attributeValues": { "attr9": "Space Gray", "attr6": "512" },
+      "assets": []
+    },
+    {
+      "id": "sku4",
+      "name": "激落ちくん スポンジ",
+      "skuId": "GEKI-001",
+      "barcode": "4903320579123",
+      "price": 380,
+      "seriesId": "ser4",
+      "categoryIds": ["cat1", "cat2", "cat3"],
+      "attributeSetIds": [],
+      "attributeValues": {},
+      "imageUrl": "https://placehold.co/400x400/ffffff/000000?text=Sponge",
+      "assets": []
+    }
+  ]
+}

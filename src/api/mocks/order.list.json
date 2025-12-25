@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "statusCode": 200,
+  "data": [
+    {
+      "id": "ord1",
+      "branchId": "br1",
+      "skuId": "sku3",
+      "quantity": 10,
+      "status": "RECEIVED",
+      "orderDate": "2023-10-01"
+    },
+    {
+      "id": "ord2",
+      "branchId": "br2",
+      "skuId": "sku1",
+      "quantity": 50,
+      "status": "SHIPPED",
+      "orderDate": "2023-10-24",
+      "driverId": "drv1"
+    },
+    {
+      "id": "ord3",
+      "branchId": "br2",
+      "skuId": "sku2",
+      "quantity": 20,
+      "status": "PENDING",
+      "orderDate": "2023-10-26"
+    }
+  ]
+}

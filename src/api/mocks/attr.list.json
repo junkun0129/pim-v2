@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "statusCode": 200,
+  "data": [
+    { "id": "attr1", "name": "サイズ", "unit": "inch" },
+    { "id": "attr2", "name": "解像度", "unit": "px" },
+    { "id": "attr3", "name": "チップ", "unit": null },
+    { "id": "attr4", "name": "RAM", "unit": "GB" },
+    { "id": "attr5", "name": "CPU", "unit": null },
+    { "id": "attr6", "name": "ストレージ", "unit": "GB" },
+    { "id": "attr7", "name": "ケースサイズ", "unit": "mm" },
+    { "id": "attr8", "name": "素材", "unit": null },
+    { "id": "attr9", "name": "カラー", "unit": null }
+  ]
+}

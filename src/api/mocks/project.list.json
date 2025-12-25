@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "statusCode": 200,
+  "data": [
+    {
+      "id": "proj1",
+      "name": "2024 春の新製品開発",
+      "description": "来春リリース予定のサステナブル掃除用品シリーズの企画・開発",
+      "status": "IN_PROGRESS",
+      "memberIds": ["user1", "user2", "user3", "user_full"],
+      "createdAt": "2023-11-01",
+      "dueDate": "2024-02-28"
+    },
+    {
+      "id": "proj2",
+      "name": "家電ラインナップ刷新",
+      "description": "既存の白物家電のリブランディング",
+      "status": "PLANNING",
+      "memberIds": ["user1", "user2", "user_full"],
+      "createdAt": "2023-11-10",
+      "dueDate": null
+    }
+  ]
+}

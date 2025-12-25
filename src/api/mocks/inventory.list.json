@@ -1,0 +1,54 @@
+{
+  "success": true,
+  "statusCode": 200,
+  "data": [
+    {
+      "skuId": "sku1",
+      "branchId": "br1",
+      "quantity": 45,
+      "lastUpdated": "2023-10-25"
+    },
+    {
+      "skuId": "sku2",
+      "branchId": "br1",
+      "quantity": 12,
+      "lastUpdated": "2023-10-24"
+    },
+    {
+      "skuId": "sku4",
+      "branchId": "br1",
+      "quantity": 150,
+      "lastUpdated": "2023-10-20"
+    },
+    {
+      "skuId": "sku1",
+      "branchId": "br2",
+      "quantity": 5,
+      "lastUpdated": "2023-10-25"
+    },
+    {
+      "skuId": "sku3",
+      "branchId": "br3",
+      "quantity": 8,
+      "lastUpdated": "2023-10-21"
+    },
+    {
+      "skuId": "sku1",
+      "branchId": "br-ec",
+      "quantity": 200,
+      "lastUpdated": "2023-10-26"
+    },
+    {
+      "skuId": "sku3",
+      "branchId": "br-ec",
+      "quantity": 50,
+      "lastUpdated": "2023-10-26"
+    },
+    {
+      "skuId": "sku4",
+      "branchId": "br-ec",
+      "quantity": 500,
+      "lastUpdated": "2023-10-26"
+    }
+  ]
+}
