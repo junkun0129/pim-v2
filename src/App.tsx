@@ -1,9 +1,9 @@
 import React from "react";
 import { Route, Routes } from "react-router";
 import AppLayout from "./components/AppLayout";
-import LoginScreen from "./pages/auth/LoginScreen";
-import SkuPage from "./pages/sku/SkuPage";
-import { Sku } from "./types";
+import LoginScreen from "./features/auth/LoginScreen";
+import SkuPage from "./features/sku/page/SkuPage";
+import { APP_ROUTES } from "./constants";
 
 export default function App() {
   return (
@@ -21,41 +21,15 @@ export default function App() {
       /> */}
       <Route element={<AppLayout />}>
         <Route path="/*" element={<div>home</div>}></Route>
-        <Route
-          path="sku"
-          element={
-            <SkuPage
-              skus={[]}
-              dataMap={{
-                series: [],
-                categories: [],
-                attributeSets: [],
-                attributes: [],
-              }}
-              addSku={function (sku: Omit<Sku, "id">): void {
-                throw new Error("Function not implemented.");
-              }}
-              updateSku={function (sku: Sku): void {
-                throw new Error("Function not implemented.");
-              }}
-              deleteSku={function (id: string): void {
-                throw new Error("Function not implemented.");
-              }}
-              onViewSku={function (skuId: string): void {
-                throw new Error("Function not implemented.");
-              }}
-              userPermissions={[]}
-            />
-          }
-        />
-        <Route path="series" />
-        <Route path="attr" />
-        <Route path="attrset" />
-        <Route path="category" />
+        <Route path={APP_ROUTES.SKU} element={<SkuPage />} />
+        <Route path={APP_ROUTES.SERIES} />
+        <Route path={APP_ROUTES.ATTR} />
+        <Route path={APP_ROUTES.ATTR_SET} />
+        <Route path={APP_ROUTES.CATEGORY} />
         <Route path="order" />
         <Route path="pop" />
         <Route path="project" />
-        <Route path="role" />
+        <Route path={APP_ROUTES.ROLE} />
         <Route path="notification" />
         <Route path="extention" />
         <Route path="ec" />

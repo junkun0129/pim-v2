@@ -1,34 +1,24 @@
 import React, { useState, useRef, useEffect } from "react";
-import type {
-  ViewType,
-  User,
-  Role,
-  Permission,
-  ExtensionType,
-} from "../src/types";
-import { ICONS } from "../src/constants";
+import type { ViewType } from "../types";
+import { APP_ROUTES, ICONS } from "../constants";
+import { useDataContext } from "./providers/dataProvider";
+import { ExtensionType } from "../entities/auth/types";
+import { Permission } from "../entities/role/types";
+import { useLocation, useNavigate } from "react-router";
 
 interface SidebarProps {
-  activeView: ViewType;
-  setActiveView: (view: ViewType) => void;
-  currentUser: User | null;
-  userRole: Role | null;
-  availableUsers: User[];
-  onSwitchUser: (userId: string) => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
   onLogout: () => void;
-  unreadNotificationCount: number; // New Prop
 }
 
 const NavItem: React.FC<{
   icon: React.ReactNode;
   label: string;
-  view: ViewType;
   isActive: boolean;
   isCollapsed: boolean;
   onClick: () => void;
-  badgeCount?: number; // New Prop
+  badgeCount?: number;
 }> = ({ icon, label, isActive, isCollapsed, onClick, badgeCount }) => (
   <button
     onClick={onClick}
@@ -78,19 +68,19 @@ const NavItem: React.FC<{
 );
 
 export default function Sidebar({
-  activeView,
-  setActiveView,
-  currentUser,
-  userRole,
-  availableUsers,
-  onSwitchUser,
   isOpenMobile,
   onCloseMobile,
   onLogout,
-  unreadNotificationCount,
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const location = useLocation();
+  const nav = useNavigate();
+
+  // Data Status
+  const { userList, roleList, me } = useDataContext();
+
+  const userRole = roleList.find((i) => i.id === me.roleId) ?? null;
 
   // Scroll state
   const navRef = useRef<HTMLElement>(null);
@@ -109,7 +99,7 @@ export default function Sidebar({
     checkScroll();
     window.addEventListener("resize", checkScroll);
     return () => window.removeEventListener("resize", checkScroll);
-  }, [activeView]);
+  }, []);
 
   // Check Permissions
   const hasPermission = (perm: Permission) => {
@@ -118,41 +108,41 @@ export default function Sidebar({
 
   // Check Extensions
   const hasExtension = (ext: ExtensionType) => {
-    return currentUser?.activeExtensions.includes(ext) || false;
+    return me?.activeExtensions.includes(ext) || false;
   };
 
   const navItems: {
-    view: ViewType;
+    view: string;
     label: string;
     icon: React.ReactNode;
     requiredPerm: Permission;
   }[] = [
     {
-      view: "SKUs",
+      view: APP_ROUTES.SKU,
       label: "SKU管理",
       icon: ICONS.dashboard,
       requiredPerm: "MASTER_VIEW",
     },
     {
-      view: "Series",
+      view: APP_ROUTES.SERIES,
       label: "シリーズ",
       icon: ICONS.series,
       requiredPerm: "MASTER_VIEW",
     },
     {
-      view: "Categories",
+      view: APP_ROUTES.CATEGORY,
       label: "カテゴリ",
       icon: ICONS.category,
       requiredPerm: "MASTER_VIEW",
     },
     {
-      view: "Attributes",
+      view: APP_ROUTES.ATTR,
       label: "属性",
       icon: ICONS.list,
       requiredPerm: "MASTER_VIEW",
     },
     {
-      view: "Attribute Sets",
+      view: APP_ROUTES.ATTR_SET,
       label: "属性セット",
       icon: ICONS.attributes,
       requiredPerm: "MASTER_VIEW",
@@ -212,7 +202,7 @@ export default function Sidebar({
   ];
 
   const adminNavItem = {
-    view: "ADMIN" as ViewType,
+    view: APP_ROUTES.ROLE,
     label: "システム管理",
     icon: ICONS.settings,
     requiredPerm: "ADMIN_VIEW" as Permission,
@@ -308,12 +298,11 @@ export default function Sidebar({
                     key={item.view}
                     icon={item.icon}
                     label={item.label}
-                    view={item.view}
-                    isActive={activeView === item.view}
+                    isActive={location.pathname.substring(1) === item.view}
                     isCollapsed={isCollapsed && !isOpenMobile}
                     onClick={() => {
-                      setActiveView(item.view);
                       onCloseMobile();
+                      nav(item.view);
                     }}
                   />
                 ))}
@@ -332,12 +321,11 @@ export default function Sidebar({
                     key={item.view}
                     icon={item.icon}
                     label={item.label}
-                    view={item.view}
-                    isActive={activeView === item.view}
+                    isActive={location.pathname.substring(1) === item.view}
                     isCollapsed={isCollapsed && !isOpenMobile}
                     onClick={() => {
-                      setActiveView(item.view);
                       onCloseMobile();
+                      nav(item.view);
                     }}
                   />
                 ))}
@@ -353,37 +341,36 @@ export default function Sidebar({
               <NavItem
                 icon={notifNavItem.icon}
                 label={notifNavItem.label}
-                view={notifNavItem.view}
-                isActive={activeView === "NOTIFICATIONS"}
+                isActive={location.pathname.substring(1) === "notification"}
                 isCollapsed={isCollapsed && !isOpenMobile}
                 onClick={() => {
-                  setActiveView("NOTIFICATIONS");
                   onCloseMobile();
+                  nav(notifNavItem.view);
                 }}
-                badgeCount={unreadNotificationCount}
+                badgeCount={2}
               />
               <NavItem
                 icon={storeNavItem.icon}
                 label={storeNavItem.label}
-                view={storeNavItem.view}
-                isActive={activeView === "EXTENSION_STORE"}
+                isActive={location.pathname.substring(1) === storeNavItem.view}
                 isCollapsed={isCollapsed && !isOpenMobile}
                 onClick={() => {
-                  setActiveView("EXTENSION_STORE");
                   onCloseMobile();
+                  nav(storeNavItem.view);
                 }}
               />
               {showAdmin && (
                 <NavItem
                   icon={adminNavItem.icon}
                   label={adminNavItem.label}
-                  view={adminNavItem.view}
-                  isActive={activeView === "ADMIN"}
                   isCollapsed={isCollapsed && !isOpenMobile}
                   onClick={() => {
-                    setActiveView("ADMIN");
                     onCloseMobile();
+                    nav(adminNavItem.view);
                   }}
+                  isActive={
+                    location.pathname.substring(1) === adminNavItem.view
+                  }
                 />
               )}
             </div>
@@ -416,7 +403,7 @@ export default function Sidebar({
 
         {/* User Switcher / Profile */}
         <div className="p-4 border-t border-zinc-800 z-20 bg-zinc-900 relative">
-          {currentUser && (
+          {me && (
             <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className={`flex items-center gap-3 w-full hover:bg-zinc-800 p-2 rounded-lg transition-colors ${
@@ -424,14 +411,14 @@ export default function Sidebar({
               }`}
             >
               <img
-                src={currentUser.avatarUrl}
+                src={me.avatarUrl}
                 alt=""
                 className="w-8 h-8 rounded-full border border-zinc-600"
               />
               {(!isCollapsed || isOpenMobile) && (
                 <div className="text-left flex-1 overflow-hidden">
                   <p className="text-sm font-medium text-white truncate">
-                    {currentUser.name}
+                    {me.name}
                   </p>
                   <p className="text-xs text-zinc-500 truncate">
                     {userRole?.name || "No Role"}
@@ -471,15 +458,14 @@ export default function Sidebar({
                   </p>
                 </div>
                 <ul className="py-1 max-h-48 overflow-y-auto">
-                  {availableUsers.map((u) => (
+                  {userList.map((u) => (
                     <li key={u.id}>
                       <button
                         onClick={() => {
-                          onSwitchUser(u.id);
                           setIsUserMenuOpen(false);
                         }}
                         className={`w-full text-left px-4 py-2 text-sm flex items-center gap-3 hover:bg-zinc-100 dark:hover:bg-zinc-700 ${
-                          currentUser?.id === u.id
+                          me?.id === u.id
                             ? "bg-zinc-50 dark:bg-zinc-700/50 font-bold"
                             : ""
                         }`}

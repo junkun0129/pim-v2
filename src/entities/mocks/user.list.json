@@ -1,0 +1,58 @@
+[
+  {
+    "id": "user_full",
+    "name": "開発者 (全拡張)",
+    "avatarUrl": "https://placehold.co/100/3b82f6/ffffff?text=FULL",
+    "roleId": "role_admin",
+    "activeExtensions": [
+      "OMS",
+      "EC",
+      "CREATIVE",
+      "CATALOG",
+      "PROJECT",
+      "EXPORT"
+    ]
+  },
+  {
+    "id": "user_minimal",
+    "name": "新人 (拡張なし)",
+    "avatarUrl": "https://placehold.co/100/e5e7eb/6b7280?text=MIN",
+    "roleId": "role_admin",
+    "activeExtensions": []
+  },
+  {
+    "id": "user1",
+    "name": "自分 (Admin)",
+    "avatarUrl": "https://placehold.co/100/3b82f6/ffffff?text=ME",
+    "roleId": "role_admin",
+    "activeExtensions": [
+      "OMS",
+      "EC",
+      "CREATIVE",
+      "CATALOG",
+      "PROJECT",
+      "EXPORT"
+    ]
+  },
+  {
+    "id": "user2",
+    "name": "田中 健 (Manager)",
+    "avatarUrl": "https://placehold.co/100/10b981/ffffff?text=TK",
+    "roleId": "role_manager",
+    "activeExtensions": ["PROJECT", "CATALOG", "EXPORT"]
+  },
+  {
+    "id": "user3",
+    "name": "佐藤 愛 (Creator)",
+    "avatarUrl": "https://placehold.co/100/f59e0b/ffffff?text=AS",
+    "roleId": "role_creator",
+    "activeExtensions": ["CREATIVE", "CATALOG", "PROJECT"]
+  },
+  {
+    "id": "user4",
+    "name": "鈴木 一郎 (Staff)",
+    "avatarUrl": "https://placehold.co/100/6366f1/ffffff?text=IS",
+    "roleId": "role_staff",
+    "activeExtensions": ["OMS", "EC"]
+  }
+]

@@ -1,0 +1,73 @@
+[
+  {
+    "id": "role_admin",
+    "name": "システム管理者",
+    "description": "すべての機能にアクセスできます。",
+    "permissions": [
+      "MASTER_VIEW",
+      "MASTER_CREATE",
+      "MASTER_EDIT",
+      "MASTER_DELETE",
+      "MASTER_IMPORT",
+      "MASTER_EXPORT",
+      "OMS_VIEW",
+      "OMS_ORDER_CREATE",
+      "EC_VIEW",
+      "EC_MANAGE",
+      "CREATIVE_VIEW",
+      "CREATIVE_EDIT",
+      "CATALOG_VIEW",
+      "CATALOG_EDIT",
+      "PROJECT_VIEW",
+      "PROJECT_CREATE",
+      "PROJECT_EDIT",
+      "ADMIN_VIEW",
+      "ADMIN_MANAGE"
+    ]
+  },
+  {
+    "id": "role_manager",
+    "name": "商品マネージャー",
+    "description": "マスタ管理とプロジェクト管理が可能です。",
+    "permissions": [
+      "MASTER_VIEW",
+      "MASTER_CREATE",
+      "MASTER_EDIT",
+      "MASTER_DELETE",
+      "MASTER_IMPORT",
+      "MASTER_EXPORT",
+      "PROJECT_VIEW",
+      "PROJECT_CREATE",
+      "PROJECT_EDIT",
+      "CATALOG_VIEW",
+      "CATALOG_EDIT"
+    ]
+  },
+  {
+    "id": "role_staff",
+    "name": "店舗スタッフ",
+    "description": "在庫確認、発注、POP作成のみ可能です。プロジェクトは閲覧のみ。",
+    "permissions": [
+      "OMS_VIEW",
+      "OMS_ORDER_CREATE",
+      "EC_VIEW",
+      "CREATIVE_VIEW",
+      "CREATIVE_EDIT",
+      "PROJECT_VIEW"
+    ]
+  },
+  {
+    "id": "role_creator",
+    "name": "コンテンツクリエイター",
+    "description": "WebカタログとPOP作成に特化。プロジェクトで起案可能。",
+    "permissions": [
+      "MASTER_VIEW",
+      "CATALOG_VIEW",
+      "CATALOG_EDIT",
+      "CREATIVE_VIEW",
+      "CREATIVE_EDIT",
+      "PROJECT_VIEW",
+      "PROJECT_CREATE"
+    ]
+  }
+]

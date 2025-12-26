@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { BrowserRouter } from "react-router";
+import { DataProvider } from "./components/providers/dataProvider";
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -11,8 +12,10 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <DataProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </DataProvider>
   </React.StrictMode>
 );
