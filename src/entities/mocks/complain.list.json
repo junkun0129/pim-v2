@@ -1,0 +1,19 @@
+[
+  {
+    "id": "comp1",
+    "branchId": "br1",
+    "title": "配送遅延について",
+    "content": "昨日到着予定の荷物がまだ届いていません。",
+    "status": "OPEN",
+    "createdAt": "2023-10-26"
+  },
+  {
+    "id": "comp2",
+    "branchId": "br3",
+    "title": "破損報告",
+    "content": "到着したSKU-001の箱が潰れていました。交換をお願いします。",
+    "status": "RESOLVED",
+    "createdAt": "2023-10-20",
+    "response": "代替品を発送しました。"
+  }
+]

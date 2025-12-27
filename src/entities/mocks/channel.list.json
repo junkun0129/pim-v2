@@ -1,0 +1,66 @@
+[
+  {
+    "id": "ch_amazon",
+    "name": "Amazon JP",
+    "fileFormat": "CSV",
+    "columns": [
+      {
+        "id": "c1",
+        "headerName": "external_product_id",
+        "sourceField": "barcode",
+        "defaultValue": ""
+      },
+      {
+        "id": "c2",
+        "headerName": "item_name",
+        "sourceField": "name",
+        "defaultValue": ""
+      },
+      {
+        "id": "c3",
+        "headerName": "standard_price",
+        "sourceField": "price",
+        "defaultValue": ""
+      },
+      {
+        "id": "c4",
+        "headerName": "brand_name",
+        "sourceField": "seriesId",
+        "defaultValue": "Generic"
+      }
+    ],
+    "lastExported": "2023-11-20 14:00"
+  },
+  {
+    "id": "ch_rakuten",
+    "name": "楽天市場 (CSV)",
+    "fileFormat": "CSV",
+    "columns": [
+      {
+        "id": "c1",
+        "headerName": "商品管理番号",
+        "sourceField": "skuId",
+        "defaultValue": ""
+      },
+      {
+        "id": "c2",
+        "headerName": "商品名",
+        "sourceField": "name",
+        "defaultValue": ""
+      },
+      {
+        "id": "c3",
+        "headerName": "販売価格",
+        "sourceField": "price",
+        "defaultValue": ""
+      },
+      {
+        "id": "c4",
+        "headerName": "PC用商品説明文",
+        "sourceField": "name",
+        "defaultValue": ""
+      }
+    ],
+    "lastExported": "2023-11-18 09:30"
+  }
+]

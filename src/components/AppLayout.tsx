@@ -5,9 +5,7 @@ import React, { useState, useMemo, useEffect } from "react";
 
 const AppLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeView, setactiveView] = useState(false);
   const location = useLocation();
-  // Close mobile menu when view changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);

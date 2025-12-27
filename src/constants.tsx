@@ -5,6 +5,13 @@ export const APP_ROUTES = {
   ATTR: "attr",
   ATTR_SET: "attrset",
   ROLE: "role",
+  EC: "ec",
+  POP: "pop",
+  ORDER: "order",
+  NOTIFICATION: "notification",
+  CHANNEL: "channel",
+  EXTENSION: "extension",
+  CATALOG: "catalog",
 };
 export const ICONS = {
   dashboard: (

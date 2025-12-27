@@ -1,0 +1,38 @@
+[
+  {
+    "id": "idea1",
+    "projectId": "proj1",
+    "userId": "user2",
+    "content": "竹繊維を使った生分解性スポンジ",
+    "color": "green",
+    "votes": 2,
+    "attachments": []
+  },
+  {
+    "id": "idea2",
+    "projectId": "proj1",
+    "userId": "user3",
+    "content": "詰め替え可能なボトルデザイン",
+    "color": "blue",
+    "votes": 1,
+    "attachments": []
+  },
+  {
+    "id": "idea3",
+    "projectId": "proj1",
+    "userId": "user1",
+    "content": "お試しセット（3種入り）",
+    "color": "yellow",
+    "votes": 3,
+    "attachments": []
+  },
+  {
+    "id": "idea4",
+    "projectId": "proj1",
+    "userId": "user2",
+    "content": "サブスクリプション販売モデル",
+    "color": "pink",
+    "votes": 0,
+    "attachments": []
+  }
+]

@@ -113,6 +113,19 @@ export const api = {
 
   // --- EXTENSIONS (System) ---
   getUserList: () => fetchRequest<void, any[]>("GET", "user/list"),
+  getBranchList: () => fetchRequest<void, any[]>("GET", "branch/list"),
+  getChannelList: () => fetchRequest<void, any[]>("GET", "channel/list"),
+  getChatList: () => fetchRequest<void, any[]>("GET", "chat/list"),
+  getComplaintList: () => fetchRequest<void, any[]>("GET", "complaint/list"),
+  getDraftList: () => fetchRequest<void, any[]>("GET", "draft/list"),
+  getDriverList: () => fetchRequest<void, any[]>("GET", "driver/list"),
+  getIdeaList: () => fetchRequest<void, any[]>("GET", "idea/list"),
+  getNotificationList: () =>
+    fetchRequest<void, any[]>("GET", "notification/list"),
+  getPopList: () => fetchRequest<void, any[]>("GET", "pop/list"),
+  getReceiveOrderList: () =>
+    fetchRequest<void, any[]>("GET", "receive-order/list"),
+  getTransferList: () => fetchRequest<void, any[]>("GET", "transfer/list"),
 };
 
 async function handleResponse<ResponseBody>(

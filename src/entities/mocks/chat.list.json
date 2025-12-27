@@ -1,0 +1,23 @@
+[
+  {
+    "id": "msg1",
+    "projectId": "proj1",
+    "userId": "user2",
+    "content": "新しいスポンジの素材についてアイデアがあります！",
+    "timestamp": "2023-11-12 10:00"
+  },
+  {
+    "id": "msg2",
+    "projectId": "proj1",
+    "userId": "user1",
+    "content": "お、いいですね。ブレストボードに貼っておいてください。",
+    "timestamp": "2023-11-12 10:05"
+  },
+  {
+    "id": "msg3",
+    "projectId": "proj1",
+    "userId": "user3",
+    "content": "パッケージデザインのラフもできたので共有します。",
+    "timestamp": "2023-11-12 11:30"
+  }
+]

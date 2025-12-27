@@ -1,0 +1,11 @@
+[
+  {
+    "id": "tr1",
+    "fromBranchId": "br1",
+    "toBranchId": "br2",
+    "skuId": "sku1",
+    "quantity": 5,
+    "status": "COMPLETED",
+    "date": "2023-10-25"
+  }
+]

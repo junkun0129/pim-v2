@@ -1,0 +1,26 @@
+[
+  {
+    "id": "br1",
+    "name": "渋谷本店",
+    "location": "東京都渋谷区",
+    "type": "RETAIL"
+  },
+  {
+    "id": "br2",
+    "name": "大阪梅田店",
+    "location": "大阪府大阪市",
+    "type": "RETAIL"
+  },
+  {
+    "id": "br3",
+    "name": "福岡天神店",
+    "location": "福岡県福岡市",
+    "type": "RETAIL"
+  },
+  {
+    "id": "br-ec",
+    "name": "公式オンラインストア",
+    "location": "千葉物流センター",
+    "type": "EC"
+  }
+]

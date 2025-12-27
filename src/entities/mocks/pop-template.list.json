@@ -1,0 +1,211 @@
+[
+  {
+    "id": "tmpl1",
+    "name": "スタンダード (A4横)",
+    "description": "シンプルで見やすい基本レイアウト",
+    "width": 800,
+    "height": 565,
+    "backgroundColor": "#ffffff",
+    "elements": [
+      {
+        "type": "RECT",
+        "x": 20,
+        "y": 20,
+        "width": 760,
+        "height": 525,
+        "fill": "transparent",
+        "isSkuImage": false
+      },
+      {
+        "type": "TEXT",
+        "x": 40,
+        "y": 40,
+        "width": 500,
+        "height": 40,
+        "fill": "#1e293b",
+        "fontSize": 36,
+        "fontWeight": "bold",
+        "isSkuName": true,
+        "fontFamily": "sans-serif"
+      },
+      {
+        "type": "IMAGE",
+        "x": 40,
+        "y": 100,
+        "width": 200,
+        "height": 200,
+        "fill": "#000",
+        "isSkuImage": true
+      },
+      {
+        "type": "TEXT",
+        "x": 260,
+        "y": 120,
+        "width": 300,
+        "height": 100,
+        "fill": "#dc2626",
+        "fontSize": 80,
+        "fontWeight": "bold",
+        "isSkuPrice": true,
+        "fontFamily": "\"RocknRoll One\", sans-serif"
+      },
+      {
+        "type": "TEXT",
+        "x": 270,
+        "y": 220,
+        "width": 300,
+        "height": 40,
+        "fill": "#64748b",
+        "fontSize": 24,
+        "fontWeight": "normal",
+        "text": "税込価格",
+        "fontFamily": "sans-serif"
+      },
+      {
+        "type": "TEXT",
+        "x": 40,
+        "y": 320,
+        "width": 300,
+        "height": 40,
+        "fill": "#000",
+        "fontSize": 20,
+        "fontWeight": "normal",
+        "isSkuBarcode": true
+      }
+    ]
+  },
+  {
+    "id": "tmpl2",
+    "name": "大特価セール (正方形)",
+    "description": "黄色い背景で目立つセール用デザイン",
+    "width": 600,
+    "height": 600,
+    "backgroundColor": "#fef9c3",
+    "elements": [
+      {
+        "type": "RECT",
+        "x": 0,
+        "y": 0,
+        "width": 600,
+        "height": 100,
+        "fill": "#ef4444"
+      },
+      {
+        "type": "TEXT",
+        "x": 220,
+        "y": 20,
+        "width": 200,
+        "height": 60,
+        "fill": "#ffffff",
+        "fontSize": 48,
+        "fontWeight": "bold",
+        "text": "SALE",
+        "fontFamily": "\"Potta One\", cursive"
+      },
+      {
+        "type": "TEXT",
+        "x": 30,
+        "y": 120,
+        "width": 540,
+        "height": 40,
+        "fill": "#000000",
+        "fontSize": 28,
+        "fontWeight": "bold",
+        "isSkuName": true,
+        "fontFamily": "sans-serif"
+      },
+      {
+        "type": "CIRCLE",
+        "x": 380,
+        "y": 180,
+        "width": 200,
+        "height": 200,
+        "fill": "#dc2626"
+      },
+      {
+        "type": "TEXT",
+        "x": 410,
+        "y": 250,
+        "width": 150,
+        "height": 60,
+        "fill": "#ffffff",
+        "fontSize": 56,
+        "fontWeight": "bold",
+        "isSkuPrice": true,
+        "fontFamily": "\"RocknRoll One\", sans-serif"
+      },
+      {
+        "type": "IMAGE",
+        "x": 30,
+        "y": 180,
+        "width": 200,
+        "height": 200,
+        "fill": "#000",
+        "isSkuImage": true
+      }
+    ]
+  },
+  {
+    "id": "tmpl3",
+    "name": "黒板風おすすめ (A4横)",
+    "description": "手書き風フォントが似合うおしゃれなデザイン",
+    "width": 800,
+    "height": 565,
+    "backgroundColor": "#1f2937",
+    "elements": [
+      {
+        "type": "RECT",
+        "x": 10,
+        "y": 10,
+        "width": 780,
+        "height": 545,
+        "fill": "transparent"
+      },
+      {
+        "type": "TEXT",
+        "x": 30,
+        "y": 30,
+        "width": 200,
+        "height": 40,
+        "fill": "#fcd34d",
+        "fontSize": 24,
+        "fontWeight": "normal",
+        "text": "店長のおすすめ",
+        "fontFamily": "\"Potta One\", cursive"
+      },
+      {
+        "type": "TEXT",
+        "x": 30,
+        "y": 80,
+        "width": 540,
+        "height": 50,
+        "fill": "#ffffff",
+        "fontSize": 40,
+        "fontWeight": "bold",
+        "isSkuName": true,
+        "fontFamily": "\"Yuji Syuku\", serif"
+      },
+      {
+        "type": "TEXT",
+        "x": 350,
+        "y": 300,
+        "width": 200,
+        "height": 60,
+        "fill": "#fcd34d",
+        "fontSize": 64,
+        "fontWeight": "bold",
+        "isSkuPrice": true,
+        "fontFamily": "\"Potta One\", cursive"
+      },
+      {
+        "type": "IMAGE",
+        "x": 30,
+        "y": 160,
+        "width": 220,
+        "height": 220,
+        "fill": "#000",
+        "isSkuImage": true
+      }
+    ]
+  }
+]

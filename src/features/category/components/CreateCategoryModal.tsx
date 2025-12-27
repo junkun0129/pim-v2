@@ -1,10 +1,25 @@
-export default const CategoryModal: React.FC<{
+import Button from "@/src/components/ui/Button";
+import Input from "@/src/components/ui/Input";
+import Modal from "@/src/components/ui/Modal";
+import Select from "@/src/components/ui/Select";
+import { Category } from "@/src/entities/category/types";
+import { getCategoryPath } from "@/src/utils";
+import { useEffect, useState } from "react";
+
+type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSave: (category: { name: string; parentId?: string }) => void;
   categories: Category[];
   categoryToEdit?: Category;
-}> = ({ isOpen, onClose, onSave, categories, categoryToEdit }) => {
+};
+export default function CategoryModal({
+  isOpen,
+  onClose,
+  onSave,
+  categories,
+  categoryToEdit,
+}: Props) {
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState("");
 
@@ -69,4 +84,4 @@ export default const CategoryModal: React.FC<{
       </div>
     </Modal>
   );
-};
+}

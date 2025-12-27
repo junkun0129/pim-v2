@@ -1,4 +1,9 @@
-const CategoryNode: React.FC<{
+import Button from "@/src/components/ui/Button";
+import { ICONS } from "@/src/constants";
+import { Category } from "@/src/entities/category/types";
+import { useEffect, useRef, useState } from "react";
+
+export const CategoryNode: React.FC<{
   category: Category;
   allCategories: Category[];
   onDelete: (id: string) => void;

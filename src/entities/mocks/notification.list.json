@@ -1,0 +1,38 @@
+[
+  {
+    "id": "notif1",
+    "title": "システムメンテナンス",
+    "message": "定期メンテナンスが完了しました。",
+    "type": "SYSTEM",
+    "actorId": "role_admin",
+    "timestamp": "2023-11-20 09:00",
+    "isRead": true
+  },
+  {
+    "id": "notif2",
+    "title": "SKUドラフト承認",
+    "message": "「詰め替えボトル 500ml」が承認されました。",
+    "type": "PROJECT",
+    "actorId": "user3",
+    "timestamp": "2023-11-21 14:30",
+    "isRead": false
+  },
+  {
+    "id": "notif3",
+    "title": "在庫アラート",
+    "message": "渋谷本店で「iPhone 14 Pro」の在庫が減少しています。",
+    "type": "ALERT",
+    "actorId": "user_full",
+    "timestamp": "2023-11-22 10:15",
+    "isRead": false
+  },
+  {
+    "id": "notif4",
+    "title": "新規発注",
+    "message": "大阪梅田店から新規発注がありました。",
+    "type": "ORDER",
+    "actorId": "user4",
+    "timestamp": "2023-11-22 11:00",
+    "isRead": true
+  }
+]

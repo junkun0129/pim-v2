@@ -1,0 +1,16 @@
+[
+  {
+    "id": "drv1",
+    "name": "佐藤 運送",
+    "phone": "090-1111-2222",
+    "status": "BUSY",
+    "currentLocation": "大阪市内配送中"
+  },
+  {
+    "id": "drv2",
+    "name": "鈴木 急便",
+    "phone": "090-3333-4444",
+    "status": "AVAILABLE",
+    "currentLocation": "東京営業所待機"
+  }
+]
