@@ -7,6 +7,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Attribute } from "@/src/entities/attr/type";
 import { Series } from "@/src/entities/series/types";
 import { Category } from "@/src/entities/category/types";
+import { useDataContext } from "@/src/components/providers/dataProvider";
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -16,13 +17,8 @@ type Props = {
   setSelectedCategory: (category: Category) => void;
   setSelectedSeries: (series: Series) => void;
   setSelectedAttrs: (attrs: Attribute[]) => void;
-  dataMap: {
-    series: Series[];
-    categories: Category[];
-    attributes: Attribute[];
-  };
 };
-const SkuFIlterModal = ({
+const SkuFilterModal = ({
   open,
   onClose,
   selectedAttrs,
@@ -31,13 +27,14 @@ const SkuFIlterModal = ({
   setSelectedCategory,
   setSelectedSeries,
   setSelectedAttrs,
-  dataMap,
 }: Props) => {
   const [categories, setcategories] = useState<Category[]>([]);
   const [series, setseries] = useState<Series[]>([]);
   const [attrs, setattrs] = useState<Attribute[]>([]);
   const [selectedAttr, setselectedAttr] = useState<Attribute>();
   const [targetAttrValue, settargetAttrValue] = useState<string>("");
+
+  const { skuOptions, attrList } = useDataContext();
 
   function handleAddAttributeFilter() {
     if (!selectedAttr || !targetAttrValue) return;
@@ -61,7 +58,7 @@ const SkuFIlterModal = ({
             label="カテゴリ"
             value={selectedCategory?.id}
             onChange={(e) => {
-              const found = dataMap.categories.find(
+              const found = skuOptions.categories.find(
                 (i) => i.id === e.target.value
               );
               setSelectedCategory(found ?? null);
@@ -79,7 +76,9 @@ const SkuFIlterModal = ({
             label="シリーズ"
             value={selectedSeries?.id}
             onChange={(e) => {
-              const found = dataMap.series.find((i) => i.id === e.target.value);
+              const found = skuOptions.series.find(
+                (i) => i.id === e.target.value
+              );
               setSelectedSeries(found ?? null);
             }}
           >
@@ -103,9 +102,7 @@ const SkuFIlterModal = ({
             <Select
               value={selectedAttr?.id}
               onChange={(e) => {
-                const found = dataMap.attributes.find(
-                  (i) => i.id === e.target.value
-                );
+                const found = attrList.find((i) => i.id === e.target.value);
                 setselectedAttr(found ?? null);
               }}
             >
@@ -169,4 +166,4 @@ const SkuFIlterModal = ({
   );
 };
 
-export default SkuFIlterModal;
+export default SkuFilterModal;

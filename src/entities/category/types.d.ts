@@ -14,7 +14,5 @@ export type CategoryOption = {
 
 export type UseCategoryProps = {
   categoryList: Category[];
-  categoryOptionList: CategoryOption[];
-  getCategoryOptionList: () => void;
-  getCategoryList: () => void;
+  loadCategoryList: () => void;
 };

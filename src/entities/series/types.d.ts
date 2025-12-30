@@ -5,8 +5,8 @@ export interface Series {
   name: string;
   childSkuIds: string[];
   categoryIds: string[];
-  attributeSetIds: string[];
-  attributeValues: Record<string, string>;
+  attrSets: AttrSetOption[];
+  attrValues: Record<string, string>;
   createdAt: string;
   imageUrl?: string;
   assets?: Asset[]; // New field
@@ -14,8 +14,7 @@ export interface Series {
 
 export type UseSeriesProps = {
   seriesList: Series[];
-  seriesOptionList: SeriesOption[];
-  fetchSeriesOptionList: () => void;
+  loadSeriesList: () => void;
 };
 
 export type SeriesOption = {

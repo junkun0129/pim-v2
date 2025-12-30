@@ -16,6 +16,12 @@ export interface Sku {
   assets?: Asset[]; // New field for multiple images/designs
 }
 
+export type SkuOptions = {
+  attrSets: AttrSetOption[];
+  categories: CategoryOption[];
+  series: SeriesOption[];
+};
+
 export type Pagination = {
   currentPage: number;
   pageSize: number;
@@ -55,4 +61,7 @@ export type UseSkuProps = {
   setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
   selectedIds: string[];
   setselectedIds: React.Dispatch<React.SetStateAction<string[]>>;
+  loadOptionsForSku: () => void;
+  skuOptions: SkuOptions;
+  loadSkuList: () => void;
 };

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Pagination, Sku } from "./types";
+import { Pagination, Sku, SkuOptions } from "./types";
 import { api } from "../api";
 import { Category } from "../category/types";
 import { Attribute } from "../attr/type";
@@ -25,18 +25,13 @@ export const useSku = () => {
   // selected sku on a table
   const [selectedIds, setselectedIds] = useState<string[]>([]);
 
-  useEffect(() => {
-    getSkuList();
-  }, [
-    skuPagination.currentPage,
-    skuPagination.pageSize,
-    searchTerm,
-    categoryFilter,
-    seriesFilter,
-    attributeFilters,
-  ]);
+  const [skuOptions, setskuOptions] = useState<SkuOptions>({
+    series: [],
+    attrSets: [],
+    categories: [],
+  });
 
-  async function getSkuList() {
+  async function loadSkuList() {
     const rawList = await api.getSkuList({
       pagination: {
         pageSize: skuPagination.pageSize,
@@ -49,6 +44,19 @@ export const useSku = () => {
     });
     console.log(rawList);
     setskuList(rawList.item);
+  }
+
+  async function loadOptionsForSku() {
+    const [c, a, s] = await Promise.all([
+      api.getCategoryOptionList(),
+      api.getAttrSetOptionList(),
+      api.getSeriesOptionsList(),
+    ]);
+    setskuOptions({
+      attrSets: a,
+      categories: c,
+      series: s,
+    });
   }
 
   return {
@@ -65,5 +73,8 @@ export const useSku = () => {
     setSearchTerm,
     selectedIds,
     setselectedIds,
+    skuOptions,
+    loadOptionsForSku,
+    loadSkuList,
   };
 };

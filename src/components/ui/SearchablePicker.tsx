@@ -24,7 +24,7 @@ type Item = {
 };
 
 type Props<T> = {
-  items: T & Item[];
+  items: (T & Item)[];
   selectedIds: string[];
   onToggle: (item: T & Item) => void;
   label: string;

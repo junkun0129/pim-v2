@@ -16,7 +16,6 @@ interface SkuTableProps {
   onToggleSelect?: (id: string) => void;
   onToggleAll?: (checked: boolean) => void;
   isAllSelected?: boolean;
-  categoryList: Category[];
 }
 
 export default function SkuTable({
@@ -28,7 +27,6 @@ export default function SkuTable({
   onToggleSelect,
   onToggleAll,
   isAllSelected,
-  categoryList,
 }: SkuTableProps) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden border border-zinc-200 dark:border-zinc-700">

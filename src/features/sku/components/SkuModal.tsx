@@ -31,14 +31,7 @@ export default function SkuModal({
   onSave,
   sku,
 }: SkuModalProps) {
-  const {
-    seriesOptionList,
-    fetchSeriesOptionList,
-    attrSetOptionList,
-    categoryOptionList,
-    getCategoryOptionList,
-    getAttrSetOptionList,
-  } = useDataContext();
+  const { skuOptions, loadOptionsForSku } = useDataContext();
 
   const [name, setName] = useState(sku?.name || "");
   const [skuId, setSkuId] = useState(sku?.skuId || "");
@@ -83,18 +76,11 @@ export default function SkuModal({
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      fetchSeriesOptionList(),
-      getCategoryOptionList(),
-      getAttrSetOptionList(),
-    ]);
-
+    loadOptionsForSku();
     return () => {
       fileRef.current = null;
     };
   }, []);
-
-  // Calculate which attributes are editable (Unique) vs Read-only (Shared)
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -222,7 +208,7 @@ export default function SkuModal({
         </div>
 
         <SearchablePicker<SeriesOption>
-          items={seriesOptionList}
+          items={skuOptions.series}
           selectedIds={selectedSeries ? [selectedSeries.id] : []}
           onToggle={setselectedSeries}
           multi={false}
@@ -231,7 +217,7 @@ export default function SkuModal({
 
         {/*  Categories - Read only if Series selected? No, usually inherited but maybe overridable. For now, let's allow edit but default to series */}
         <SearchablePicker<CategoryOption>
-          items={categoryOptionList}
+          items={skuOptions.categories}
           selectedIds={selectedCategories.map((i) => i.id)}
           onToggle={(item) => {
             const set = new Set(selectedCategories);
@@ -247,7 +233,7 @@ export default function SkuModal({
 
         {/* Attribute Sets Selection - Only if NO series selected */}
         <SearchablePicker<AttrSetOption>
-          items={attrSetOptionList}
+          items={skuOptions.attrSets}
           selectedIds={selectedAttrs.map((i) => i.id)}
           onToggle={(item) => {
             const set = new Set(selectedAttrs);

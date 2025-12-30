@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SkuTable from "../components/SkuTable";
 import SkuModal from "../components/SkuModal";
 import ImportModal from "../components/ImportModal";
@@ -6,10 +6,10 @@ import Button from "../../../components/ui/Button";
 import { APP_ROUTES, ICONS } from "../../../constants";
 import Badge from "../../../components/ui/Badge";
 import { getCategoryPath } from "../../../utils";
-import SkuFIlterModal from "../components/SkuFIlterModal";
 import { useDataContext } from "@/src/components/providers/dataProvider";
 import { Sku } from "@/src/entities/sku/types";
 import { useNavigate } from "react-router";
+import SkuFilterModal from "../components/SkuFIlterModal";
 
 export default function SkuPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,11 +31,20 @@ export default function SkuPage() {
     setSeriesFilter,
     setselectedIds,
     setskuPagination,
-    seriesList,
-    categoryList,
-    attrList,
-    attrSetList,
+    loadSkuList,
   } = useDataContext();
+
+  useEffect(() => {
+    loadSkuList();
+  }, [
+    skuPagination.currentPage,
+    skuPagination.pageSize,
+    searchTerm,
+    categoryFilter,
+    seriesFilter,
+    attributeFilters,
+  ]);
+
   // Selection Handlers
   const handleToggleSelect = (id: string) => {
     const oldSet = new Set(selectedIds);
@@ -321,7 +330,6 @@ export default function SkuPage() {
         onToggleSelect={handleToggleSelect}
         onToggleAll={handleToggleAllPage}
         isAllSelected={isAllPageSelected}
-        categoryList={categoryList}
       />
 
       {/* Pagination Controls - Sticky Bottom */}
@@ -392,7 +400,7 @@ export default function SkuPage() {
       )}
 
       {/* Filter Modal */}
-      <SkuFIlterModal
+      <SkuFilterModal
         open={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
         selectedAttrs={attributeFilters}
@@ -401,11 +409,6 @@ export default function SkuPage() {
         setSelectedCategory={setCategoryFilter}
         setSelectedSeries={setSeriesFilter}
         setSelectedAttrs={setAttributeFilters}
-        dataMap={{
-          series: seriesList,
-          attributes: attrList,
-          categories: categoryList,
-        }}
       />
 
       {/* Create/Edit Modal */}

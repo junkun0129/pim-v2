@@ -9,9 +9,7 @@ export interface AttributeSet {
 
 export type UseAttrSetProps = {
   attrSetList: AttributeSet[];
-  attrSetOptionList: AttrSetOption[];
-  getAttrSetList: () => void;
-  getAttrSetOptionList: () => void;
+  loadAttrSetList: () => void;
 };
 
 export type AttrSetOptionAttrItem = {
