@@ -179,23 +179,24 @@ export default function SkuTable({
                       {sku.price ? `¥${sku.price.toLocaleString()}` : "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {sku.seriesId}
+                      {sku.series?.name}
                     </td>
                     <td className="px-6 py-4 max-w-xs">
                       {/* Use flex-nowrap and overflow to prevent height jumping */}
                       <div className="flex gap-1 overflow-x-auto no-scrollbar mask-linear-fade">
-                        {sku.categoryIds.map((catId) => (
-                          <Badge key={catId} className="whitespace-nowrap">
-                            {getCategoryPath(catId, categoryList)
-                              .split(">")
-                              .pop()}
+                        {sku.categoryries.map((category) => (
+                          <Badge
+                            key={category.id}
+                            className="whitespace-nowrap"
+                          >
+                            {category.relativePaths.join(" > ")}
                           </Badge>
                         ))}
                       </div>
                     </td>
                     <td className="px-6 py-4 max-w-xs">
                       <div className="flex gap-1 overflow-x-auto no-scrollbar">
-                        属性があった箇所だが、なくしてよいか？
+                        属性
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

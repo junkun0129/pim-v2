@@ -2,9 +2,11 @@ import { Outlet, useLocation } from "react-router";
 import Sidebar from "./Sidebar";
 import { ToastContainer } from "./ui/Toast";
 import React, { useState, useMemo, useEffect } from "react";
+import { useToastContext } from "./providers/toastProvider";
 
 const AppLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { removeFromToastsById, toasts } = useToastContext();
   const location = useLocation();
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -13,7 +15,7 @@ const AppLayout = () => {
   function handleLogout() {}
   return (
     <div className="flex h-screen bg-zinc-50 dark:bg-black text-zinc-900 font-sans overflow-hidden">
-      {/* <ToastContainer toasts={toasts} removeToast={removeToast} /> */}
+      <ToastContainer toasts={toasts} removeToast={removeFromToastsById} />
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-zinc-900 text-white z-30 flex items-center px-4 justify-between shadow-md">

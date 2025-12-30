@@ -1,16 +1,25 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
-import { AttributeSet } from "./type";
+import { AttributeSet, AttrSetOption } from "./type";
 
 export const useAttrSet = () => {
   const [attrSetList, setattrSetList] = useState<AttributeSet[]>([]);
-  useEffect(() => {
-    getList();
-  }, []);
+  const [attrSetOptionList, setattrSetOptionList] = useState<AttrSetOption[]>(
+    []
+  );
 
-  const getList = async () => {
+  const getAttrSetList = async () => {
     const rawList = await api.getAttrSetList();
     setattrSetList(rawList);
   };
-  return { attrSetList };
+  const getAttrSetOptionList = async () => {
+    const rawList = await api.getAttrSetOptionList();
+    setattrSetOptionList(rawList);
+  };
+  return {
+    attrSetList,
+    attrSetOptionList,
+    getAttrSetList,
+    getAttrSetOptionList,
+  };
 };

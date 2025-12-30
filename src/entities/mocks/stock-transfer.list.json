@@ -1,0 +1,21 @@
+[
+  {
+    "id": "st-999-01",
+    "fromBranch": {
+      "id": "branch-tokyo-01",
+      "name": "東京メイン倉庫"
+    },
+    "toBranch": {
+      "id": "branch-osaka-02",
+      "name": "大阪梅田店"
+    },
+    "sku": {
+      "id": "sku-abc-123",
+      "name": "プレミアム・コーヒー豆 200g",
+      "skuId": "COFFEE-001"
+    },
+    "quantity": 20,
+    "status": "SHIPPED",
+    "date": "2025-12-26T18:00:00Z"
+  }
+]

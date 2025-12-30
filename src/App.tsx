@@ -6,6 +6,8 @@ import { APP_ROUTES } from "./constants";
 import CategoryPage from "./features/category/CategoryPage";
 import AttrPage from "./features/attr/page/AttrPage";
 import AttrSetPage from "./features/attrset/page/AttrSetPage";
+import SkuDetailPage from "./features/sku/page/SkuDetailPage";
+import OrderPage from "./features/order/OrderPage";
 
 export default function App() {
   return (
@@ -24,11 +26,12 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route path="/*" element={<div>home</div>}></Route>
         <Route path={APP_ROUTES.SKU} element={<SkuPage />} />
+        <Route path={APP_ROUTES.SKU_DETAIL} element={<SkuDetailPage />} />
         <Route path={APP_ROUTES.SERIES} />
         <Route path={APP_ROUTES.ATTR} element={<AttrPage />} />
         <Route path={APP_ROUTES.ATTR_SET} element={<AttrSetPage />} />
         <Route path={APP_ROUTES.CATEGORY} element={<CategoryPage />} />
-        <Route path="order" />
+        <Route path={APP_ROUTES.ORDER} element={<OrderPage />} />
         <Route path="pop" />
         <Route path="project" />
         <Route path={APP_ROUTES.ROLE} />

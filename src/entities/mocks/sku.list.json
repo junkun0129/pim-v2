@@ -2,78 +2,127 @@
   "total": 120,
   "item": [
     {
-      "id": "sku1",
-      "name": "iPhone 14 Pro SpaceBlack",
-      "skuId": "IP14P-128-BLK",
-      "barcode": "4549995359787",
-      "price": 149800,
-      "seriesId": "ser1",
-      "categoryIds": ["cat4", "cat5"],
-      "attributeSetIds": [],
-      "attributeValues": { "attr9": "Space Black", "attr6": "128" },
-      "imageUrl": "https://placehold.co/400x400/111827/ffffff?text=iPhone+14+Pro+BLK",
+      "id": "sku-001",
+      "name": "プレシジョン ゲルインクペン - 藍色",
+      "skuId": "PEN-BL-001",
+      "barcode": "4901234567890",
+      "price": 350,
+      "series": {
+        "id": "ser-pen-01",
+        "name": "プレシジョン文具シリーズ",
+        "childSkuIds": ["sku-001", "sku-002"],
+        "categoryIds": ["cat-pen-10"],
+        "attrSets": [
+          {
+            "id": "as-pen",
+            "name": "ペン基本仕様",
+            "createdAt": "2024-01-10T00:00:00Z",
+            "attrs": [
+              { "id": "at-ink", "name": "インク種類", "isUnique": false },
+              {
+                "id": "at-width",
+                "name": "芯径",
+                "unit": "mm",
+                "isUnique": false
+              }
+            ]
+          }
+        ],
+        "attrValues": {
+          "at-ink": "ゲルインク"
+        },
+        "createdAt": "2024-01-10T00:00:00Z",
+        "imageUrl": "https://assets.example.jp/series/pen-main.jpg"
+      },
+      "categoryries": [
+        {
+          "id": "cat-pen-10",
+          "name": "ボールペン",
+          "relativePaths": ["文房具", "筆記用具", "ボールペン"],
+          "createdAt": "2024-01-01T00:00:00Z"
+        }
+      ],
+      "attrSets": [
+        {
+          "id": "as-pen",
+          "name": "ペン基本仕様",
+          "createdAt": "2024-01-10T00:00:00Z",
+          "attrs": [
+            { "id": "at-ink", "name": "インク種類", "isUnique": false },
+            {
+              "id": "at-width",
+              "name": "芯径",
+              "unit": "mm",
+              "isUnique": false
+            }
+          ]
+        }
+      ],
+      "attrValues": {
+        "at-ink": "ゲルインク",
+        "at-width": "0.5"
+      },
+      "imageUrl": "https://assets.example.jp/skus/pen-blue.jpg",
       "assets": [
         {
-          "id": "a1",
+          "id": "as-001",
           "type": "IMAGE",
-          "name": "Main Product Image",
-          "url": "https://placehold.co/400x400/111827/ffffff?text=iPhone+14+Pro+BLK",
-          "createdAt": "2023-10-01"
+          "name": "商品正面写真",
+          "url": "https://assets.example.jp/skus/pen-blue-front.jpg",
+          "createdAt": "2024-01-12T10:00:00Z",
+          "mimeType": "image/jpeg",
+          "size": "1.2MB"
         },
         {
-          "id": "a2",
-          "type": "VIDEO",
-          "name": "Product Reveal Teaser",
-          "url": "https://www.w3schools.com/html/mov_bbb.mp4",
-          "createdAt": "2023-10-02",
-          "size": "15 MB"
-        },
-        {
-          "id": "a3",
-          "type": "FILE",
-          "name": "Spec_Sheet_v2.pdf",
-          "url": "#",
-          "createdAt": "2023-10-03",
-          "size": "2.4 MB"
+          "id": "as-002",
+          "type": "DESIGN",
+          "name": "ロゴ配置指示書",
+          "url": "https://assets.example.jp/skus/pen-design.pdf",
+          "createdAt": "2024-01-12T10:30:00Z",
+          "mimeType": "application/pdf"
         }
       ]
     },
     {
-      "id": "sku2",
-      "name": "iPhone 14 Blue",
-      "skuId": "IP14-128-BLU",
-      "barcode": "4549995361234",
-      "price": 119800,
-      "seriesId": "ser1",
-      "categoryIds": ["cat4", "cat5"],
-      "attributeSetIds": [],
-      "attributeValues": { "attr9": "Blue", "attr6": "128" },
-      "assets": []
-    },
-    {
-      "id": "sku3",
-      "name": "MacBook Pro 14\" M2 Pro SpaceGray",
-      "skuId": "MBP14-M2P-512",
-      "barcode": "4549995365678",
-      "price": 288800,
-      "seriesId": "ser2",
-      "categoryIds": ["cat4", "cat6"],
-      "attributeSetIds": [],
-      "attributeValues": { "attr9": "Space Gray", "attr6": "512" },
-      "assets": []
-    },
-    {
-      "id": "sku4",
-      "name": "激落ちくん スポンジ",
-      "skuId": "GEKI-001",
-      "barcode": "4903320579123",
-      "price": 380,
-      "seriesId": "ser4",
-      "categoryIds": ["cat1", "cat2", "cat3"],
-      "attributeSetIds": [],
-      "attributeValues": {},
-      "imageUrl": "https://placehold.co/400x400/ffffff/000000?text=Sponge",
-      "assets": []
+      "id": "sku-002",
+      "name": "ヘビーウェイト ロゴTシャツ - 白 (L)",
+      "skuId": "TSHIRT-WHT-L",
+      "barcode": "4901234999999",
+      "price": 2800,
+      "categoryries": [
+        {
+          "id": "cat-app-20",
+          "name": "Tシャツ",
+          "relativePaths": ["ファッション", "トップス", "Tシャツ"],
+          "createdAt": "2024-02-01T00:00:00Z"
+        }
+      ],
+      "attrSets": [
+        {
+          "id": "as-clothing",
+          "name": "衣類サイズスペック",
+          "createdAt": "2024-02-05T00:00:00Z",
+          "attrs": [
+            { "id": "at-size", "name": "サイズ", "isUnique": true },
+            { "id": "at-material", "name": "素材", "isUnique": false }
+          ]
+        }
+      ],
+      "attrValues": {
+        "at-size": "L",
+        "at-material": "綿100%"
+      },
+      "imageUrl": "https://assets.example.jp/skus/tshirt-white.jpg",
+      "assets": [
+        {
+          "id": "as-003",
+          "type": "VIDEO",
+          "name": "着用イメージ動画",
+          "url": "https://assets.example.jp/skus/tshirt-pv.mp4",
+          "createdAt": "2024-02-10T15:00:00Z",
+          "mimeType": "video/mp4"
+        }
+      ]
     }
   ]
 }

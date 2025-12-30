@@ -1,54 +1,43 @@
-{
-  "success": true,
-  "statusCode": 200,
-  "data": [
-    {
-      "skuId": "sku1",
-      "branchId": "br1",
-      "quantity": 45,
-      "lastUpdated": "2023-10-25"
+[
+  {
+    "id": "inv-001",
+    "sku": {
+      "id": "sku-abc-123",
+      "name": "プレミアム・コーヒー豆 200g",
+      "skuId": "COFFEE-001",
+      "barcode": "4901234567890",
+      "price": 1200,
+      "categoryIds": ["cat-01"],
+      "attributeSetIds": ["attr-set-01"],
+      "attributeValues": {
+        "roast": "Medium",
+        "origin": "Ethiopia"
+      },
+      "imageUrl": "https://example.com/images/coffee.jpg"
     },
-    {
-      "skuId": "sku2",
-      "branchId": "br1",
-      "quantity": 12,
-      "lastUpdated": "2023-10-24"
+    "branchId": "br1",
+    "quantity": 50,
+    "lastUpdated": "2025-12-27T10:00:00Z",
+    "imageUrl": "https://example.com/images/coffee.jpg",
+    "status": "IN_STOCK"
+  },
+  {
+    "id": "inv-002",
+    "sku": {
+      "id": "sku-xyz-789",
+      "name": "ドリッパー Sサイズ",
+      "skuId": "DRIP-002",
+      "price": 2500,
+      "categoryIds": ["cat-02"],
+      "attributeSetIds": ["attr-set-02"],
+      "attributeValues": {
+        "material": "Ceramic"
+      }
     },
-    {
-      "skuId": "sku4",
-      "branchId": "br1",
-      "quantity": 150,
-      "lastUpdated": "2023-10-20"
-    },
-    {
-      "skuId": "sku1",
-      "branchId": "br2",
-      "quantity": 5,
-      "lastUpdated": "2023-10-25"
-    },
-    {
-      "skuId": "sku3",
-      "branchId": "br3",
-      "quantity": 8,
-      "lastUpdated": "2023-10-21"
-    },
-    {
-      "skuId": "sku1",
-      "branchId": "br-ec",
-      "quantity": 200,
-      "lastUpdated": "2023-10-26"
-    },
-    {
-      "skuId": "sku3",
-      "branchId": "br-ec",
-      "quantity": 50,
-      "lastUpdated": "2023-10-26"
-    },
-    {
-      "skuId": "sku4",
-      "branchId": "br-ec",
-      "quantity": 500,
-      "lastUpdated": "2023-10-26"
-    }
-  ]
-}
+    "branchId": "br1",
+    "quantity": 12,
+    "lastUpdated": "2025-12-27T09:30:00Z",
+    "imageUrl": "https://example.com/images/dripper.jpg",
+    "status": "LOW_STOCK"
+  }
+]

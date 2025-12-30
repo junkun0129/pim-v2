@@ -1,28 +1,27 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 
 import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/ui/Input";
 import Select from "../../../components/ui/Select";
 import Button from "../../../components/ui/Button";
 import { getCategoryPath } from "../../../utils";
-import { api } from "../../../entities/api";
 import { APP_CONFIG } from "../../../config";
 import { Sku } from "@/src/entities/sku/types";
-import { Category } from "@/src/entities/category/types";
-import { Series } from "@/src/entities/series/types";
-import { AttributeSet } from "@/src/entities/attrset/type";
+import { Category, CategoryOption } from "@/src/entities/category/types";
+import { Series, SeriesOption } from "@/src/entities/series/types";
+import {
+  AttributeSet,
+  AttrSetOption,
+  AttrSetOptionAttrItem,
+} from "@/src/entities/attrset/type";
 import { Attribute } from "@/src/entities/attr/type";
+import { useDataContext } from "@/src/components/providers/dataProvider";
+import SearchablePicker from "@/src/components/ui/SearchablePicker";
 
 interface SkuModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (sku: Omit<Sku, "id">) => void;
-  dataMap: {
-    series: Series[];
-    categories: Category[];
-    attributeSets: AttributeSet[];
-    attributes: Attribute[];
-  };
   sku?: Sku; // for editing in the future
 }
 
@@ -30,132 +29,111 @@ export default function SkuModal({
   isOpen,
   onClose,
   onSave,
-  dataMap,
   sku,
 }: SkuModalProps) {
+  const {
+    seriesOptionList,
+    fetchSeriesOptionList,
+    attrSetOptionList,
+    categoryOptionList,
+    getCategoryOptionList,
+    getAttrSetOptionList,
+  } = useDataContext();
+
   const [name, setName] = useState(sku?.name || "");
   const [skuId, setSkuId] = useState(sku?.skuId || "");
   const [barcode, setBarcode] = useState(sku?.barcode || "");
+  const fileRef = useRef<File>(null);
   const [price, setPrice] = useState<string>(
     sku?.price ? String(sku.price) : ""
   );
-  const [seriesId, setSeriesId] = useState(sku?.seriesId || "");
-  const [categoryIds, setCategoryIds] = useState<string[]>(
-    sku?.categoryIds || []
+
+  const [selectedSeries, setselectedSeries] = useState<SeriesOption | null>(
+    sku?.series
+      ? {
+          id: sku.series.id,
+          name: sku.series.name,
+          sharedAttrs: sku.series.attrValues,
+          createdAt: sku.series.createdAt,
+        }
+      : null
   );
-  const [attributeSetIds, setAttributeSetIds] = useState<string[]>(
-    sku?.attributeSetIds || []
+  const [selectedCategories, setselectedCategories] = useState<
+    CategoryOption[]
+  >(
+    sku?.categoryries
+      ? sku.categoryries.map((i) => ({
+          id: i.id,
+          name: i.name,
+          createdAt: i.createdAt,
+          subtext: i.relativePaths.join(" < "),
+        }))
+      : []
   );
-  const [attributeValues, setAttributeValues] = useState<
+  const [selectedAttrs, setselectedAttrs] = useState<AttrSetOption[]>(
+    sku?.attrSets || []
+  );
+
+  const [SelectedAttrValues, setSelectedAttrValues] = useState<
     Record<string, string>
-  >(sku?.attributeValues || {});
+  >({});
+
   const [imageUrl, setImageUrl] = useState(sku?.imageUrl || "");
 
   const [isUploading, setIsUploading] = useState(false);
 
-  const isSeriesSelected = !!seriesId;
-  const selectedSeries = dataMap.series.find((s) => s.id === seriesId);
-
-  // When Series changes, reset non-series stuff
   useEffect(() => {
-    if (isSeriesSelected && selectedSeries) {
-      // Inherit from Series
-      setCategoryIds(selectedSeries.categoryIds);
-      setAttributeSetIds(selectedSeries.attributeSetIds);
-      // We don't overwrite attributeValues entirely, but we should clear values that are now shared?
-      // Actually, keep existing values for editing, but UI will hide shared ones.
-    } else if (!sku) {
-      // Only reset if creating new and deselecting series
-      setAttributeSetIds([]);
-      setAttributeValues({});
-    }
-  }, [seriesId, selectedSeries, sku]);
+    Promise.all([
+      fetchSeriesOptionList(),
+      getCategoryOptionList(),
+      getAttrSetOptionList(),
+    ]);
+
+    return () => {
+      fileRef.current = null;
+    };
+  }, []);
 
   // Calculate which attributes are editable (Unique) vs Read-only (Shared)
-  const attributeConfig = useMemo(() => {
-    const uniqueAttrs: Attribute[] = [];
-    const sharedAttrs: Attribute[] = [];
-
-    const activeSetIds =
-      isSeriesSelected && selectedSeries
-        ? selectedSeries.attributeSetIds
-        : attributeSetIds;
-
-    activeSetIds.forEach((setId) => {
-      const set = dataMap.attributeSets.find((s) => s.id === setId);
-      if (set) {
-        set.attributeIds.forEach((attrId) => {
-          const attr = dataMap.attributes.find((a) => a.id === attrId);
-          if (!attr) return;
-
-          const isShared = set.sharedAttributeIds?.includes(attrId);
-
-          if (isSeriesSelected && isShared) {
-            sharedAttrs.push(attr);
-          } else {
-            uniqueAttrs.push(attr);
-          }
-        });
-      }
-    });
-
-    // Deduplicate
-    return {
-      unique: Array.from(new Set(uniqueAttrs)),
-      shared: Array.from(new Set(sharedAttrs)),
-    };
-  }, [
-    attributeSetIds,
-    isSeriesSelected,
-    selectedSeries,
-    dataMap.attributeSets,
-    dataMap.attributes,
-  ]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-
-      // If using MOCK data, just use Base64 to keep it working without backend
-      if (APP_CONFIG.useMockData) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImageUrl(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-        return;
-      }
-
-      // If using REAL API, upload to S3 (via API)
-      setIsUploading(true);
-      try {
-        // const url = await api.uploadImage(file);
-        // setImageUrl(url);
-      } catch (err) {
-        console.error("Upload failed", err);
-        alert("画像のアップロードに失敗しました。");
-      } finally {
-        setIsUploading(false);
-      }
+      fileRef.current = file;
     }
   };
 
   const handleSave = () => {
     if (name && skuId) {
-      onSave({
-        name,
-        skuId,
-        barcode,
-        price: price ? parseInt(price) : undefined,
-        seriesId: seriesId || undefined,
-        categoryIds,
-        attributeSetIds: isSeriesSelected ? [] : attributeSetIds, // If series selected, sets are on series
-        attributeValues,
-        imageUrl: imageUrl || undefined,
-      });
+      // onSave({
+      //   name,
+      //   skuId,
+      //   barcode,
+      //   price: price ? parseInt(price) : undefined,
+      //   seriesId: seriesId || undefined,
+      //   categoryIds,
+      //   attributeSetIds: isSeriesSelected ? [] : attributeSetIds, // If series selected, sets are on series
+      //   attributeValues,
+      //   imageUrl: imageUrl || undefined,
+      // });
       onClose();
     }
   };
+
+  const selectedAttrsConfig = useMemo(() => {
+    const unique: AttrSetOptionAttrItem[] = [];
+    const shared: AttrSetOptionAttrItem[] = [];
+    selectedAttrs.map((attrset) => {
+      attrset.attrs.map((attr) => {
+        if (attr.isUnique) {
+          unique.push(attr);
+        } else {
+          shared.push(attr);
+        }
+      });
+    });
+    return { unique, shared };
+  }, []);
 
   return (
     <Modal
@@ -243,100 +221,78 @@ export default function SkuModal({
           </div>
         </div>
 
-        <Select
-          label="シリーズ (任意)"
-          value={seriesId}
-          onChange={(e) => setSeriesId(e.target.value)}
-        >
-          <option value="">なし (単独SKU)</option>
-          {dataMap.series.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </Select>
+        <SearchablePicker<SeriesOption>
+          items={seriesOptionList}
+          selectedIds={selectedSeries ? [selectedSeries.id] : []}
+          onToggle={setselectedSeries}
+          multi={false}
+          label={"所属シリーズ（任意）"}
+        />
 
-        {/* Categories - Read only if Series selected? No, usually inherited but maybe overridable. For now, let's allow edit but default to series */}
-        <Select
-          label="カテゴリ"
-          multiple
-          value={categoryIds}
-          onChange={(e) =>
-            setCategoryIds(
-              Array.from(
-                e.target.selectedOptions,
-                (option: HTMLOptionElement) => option.value
-              )
-            )
-          }
-        >
-          {dataMap.categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {getCategoryPath(c.id, dataMap.categories)}
-            </option>
-          ))}
-        </Select>
+        {/*  Categories - Read only if Series selected? No, usually inherited but maybe overridable. For now, let's allow edit but default to series */}
+        <SearchablePicker<CategoryOption>
+          items={categoryOptionList}
+          selectedIds={selectedCategories.map((i) => i.id)}
+          onToggle={(item) => {
+            const set = new Set(selectedCategories);
+            if (set.has(item as CategoryOption)) {
+              set.delete(item);
+            } else {
+              set.add(item);
+            }
+            setselectedCategories(Array.from(new Set(set)));
+          }}
+          label={"カテゴリ"}
+        />
 
         {/* Attribute Sets Selection - Only if NO series selected */}
-        {!isSeriesSelected && (
-          <div>
-            <Select
-              label="属性セット"
-              multiple
-              value={attributeSetIds}
-              onChange={(e) =>
-                setAttributeSetIds(
-                  Array.from(
-                    e.target.selectedOptions,
-                    (option: HTMLOptionElement) => option.value
-                  )
-                )
-              }
-            >
-              {dataMap.attributeSets.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
+        <SearchablePicker<AttrSetOption>
+          items={attrSetOptionList}
+          selectedIds={selectedAttrs.map((i) => i.id)}
+          onToggle={(item) => {
+            const set = new Set(selectedAttrs);
+            if (set.has(item)) {
+              set.delete(item);
+            } else {
+              set.add(item);
+            }
+            setselectedAttrs(Array.from(set));
+          }}
+          label={"属性セット"}
+        />
+
+        {/* Shared Attributes Display (Read Only) */}
+        {selectedSeries && selectedAttrsConfig.shared.length > 0 && (
+          <div className="bg-slate-50 dark:bg-zinc-800 p-3 rounded-lg border border-slate-200 dark:border-zinc-700">
+            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">
+              共通属性 (シリーズ設定)
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {selectedAttrsConfig.shared.map((attr) => (
+                <div key={attr.id} className="text-sm">
+                  <span className="text-slate-500 block text-xs">
+                    {attr.name}
+                  </span>
+                  <span className="font-medium text-slate-800 dark:text-white">
+                    {selectedSeries.sharedAttrs[attr.id] || "-"} {attr.unit}
+                  </span>
+                </div>
               ))}
-            </Select>
+            </div>
           </div>
         )}
 
-        {/* Shared Attributes Display (Read Only) */}
-        {isSeriesSelected &&
-          attributeConfig.shared.length > 0 &&
-          selectedSeries && (
-            <div className="bg-slate-50 dark:bg-zinc-800 p-3 rounded-lg border border-slate-200 dark:border-zinc-700">
-              <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">
-                共通属性 (シリーズ設定)
-              </h4>
-              <div className="grid grid-cols-2 gap-2">
-                {attributeConfig.shared.map((attr) => (
-                  <div key={attr.id} className="text-sm">
-                    <span className="text-slate-500 block text-xs">
-                      {attr.name}
-                    </span>
-                    <span className="font-medium text-slate-800 dark:text-white">
-                      {selectedSeries.attributeValues[attr.id] || "-"}{" "}
-                      {attr.unit}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
         {/* Unique Attributes Input */}
-        {attributeConfig.unique.length > 0 && (
+        {selectedAttrsConfig.unique.length > 0 && (
           <div className="space-y-3 pt-3 border-t dark:border-slate-600">
             <h4 className="font-semibold text-sm">独自属性値</h4>
-            {attributeConfig.unique.map((attr) => (
+            {selectedAttrsConfig.unique.map((attr) => (
               <Input
                 key={attr.id}
                 label={`${attr.name} ${attr.unit ? `(${attr.unit})` : ""}`}
-                value={attributeValues[attr.id] || ""}
+                value={setSelectedAttrValues[attr.id] || ""}
                 onChange={(e) =>
-                  setAttributeValues((prev) => ({
+                  setSelectedAttrValues((prev) => ({
                     ...prev,
                     [attr.id]: e.target.value,
                   }))

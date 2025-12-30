@@ -1,18 +1,21 @@
-import { Attribute } from "@/src/types";
-
+import { Series } from "../series/types";
+import { Category } from "../category/types";
+import { AttributeSet, AttrSetOption } from "../attrset/type";
+import { Attribute } from "../attr/type";
 export interface Sku {
   id: string;
   name: string;
   skuId: string;
-  barcode?: string; // New field for JAN/EAN/UPC code
+  barcode?: string;
   price?: number;
-  seriesId?: string;
-  categoryIds: string[];
-  attributeSetIds: string[];
-  attributeValues: Record<string, string>;
+  series?: Series;
+  categoryries: Category[];
+  attrSets: AttrSetOption[];
+  attrValues: Record<string, string>;
   imageUrl?: string;
   assets?: Asset[]; // New field for multiple images/designs
 }
+
 export type Pagination = {
   currentPage: number;
   pageSize: number;

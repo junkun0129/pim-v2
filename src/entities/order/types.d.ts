@@ -1,3 +1,21 @@
+import { Sku } from "../sku/types";
+
+export type UseOrderProps = {
+  branches: Branch[];
+  inventoryList: Record<string, Inventory[]>;
+  orderList: Record<string, Order[]>;
+  transferList: Record<string, StockTransfer[]>;
+  currentBranchId: string;
+  complaintList: Record<string, Complaint[]>;
+  driverList: Record<string, Driver[]>;
+  fetchBranchList: () => void;
+  fetchOrderList: () => void;
+  fetchTransferList: () => void;
+  fetchInventoryList: () => void;
+  setcurrentBranchId: (id: string) => void;
+  fetchComplaintList: () => void;
+  fetchDriverList: () => void;
+};
 export interface Branch {
   id: string;
   name: string;
@@ -7,11 +25,11 @@ export interface Branch {
 export interface Order {
   id: string;
   branchId: string;
-  skuId: string;
+  sku: Sku;
   quantity: number;
   status: OrderStatus;
   orderDate: string;
-  driverId?: string; // Assigned driver
+  driver?: Driver; // Assigned driver
 }
 export interface CustomerOrder {
   id: string;
@@ -40,9 +58,9 @@ export interface Driver {
 }
 export interface StockTransfer {
   id: string;
-  fromBranchId: string;
-  toBranchId: string;
-  skuId: string;
+  fromBranch: Branch;
+  toBranch: Branch;
+  sku: Sku;
   quantity: number;
   status: "REQUESTED" | "SHIPPED" | "COMPLETED";
   date: string;
@@ -57,8 +75,12 @@ export type OrderStatus =
 export type BranchType = "RETAIL" | "EC";
 
 export interface Inventory {
-  skuId: string;
+  id: string;
+  sku: Sku;
   branchId: string;
   quantity: number;
   lastUpdated: string;
+  imageUrl: string;
+  status: string;
+  sku: Sku;
 }

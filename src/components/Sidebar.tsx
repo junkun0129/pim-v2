@@ -158,35 +158,35 @@ export default function Sidebar({
     requiredExt: ExtensionType;
   }[] = [
     {
-      view: "CHANNEL_EXPORT",
+      view: APP_ROUTES.CHANNEL,
       label: "チャネル連携",
       icon: ICONS.exportCloud,
       requiredPerm: "MASTER_EXPORT",
       requiredExt: "EXPORT",
     },
     {
-      view: "Orders",
+      view: APP_ROUTES.ORDER,
       label: "在庫・発注",
       icon: ICONS.truck,
       requiredPerm: "OMS_VIEW",
       requiredExt: "OMS",
     },
     {
-      view: "EC",
+      view: APP_ROUTES.EC,
       label: "ECストア",
       icon: ICONS.globe,
       requiredPerm: "EC_VIEW",
       requiredExt: "EC",
     },
     {
-      view: "CREATIVE",
+      view: APP_ROUTES.POP,
       label: "POP作成",
       icon: ICONS.palette,
       requiredPerm: "CREATIVE_VIEW",
       requiredExt: "CREATIVE",
     },
     {
-      view: "CATALOG",
+      view: APP_ROUTES.CATALOG,
       label: "Webカタログ",
       icon: ICONS.book,
       requiredPerm: "CATALOG_VIEW",

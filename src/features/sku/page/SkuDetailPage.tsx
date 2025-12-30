@@ -1,61 +1,47 @@
-import React, { useState } from "react";
-import type {
-  Sku,
-  Series,
-  Category,
-  Attribute,
-  AttributeSet,
-  Asset,
-} from "../src/types";
-import Button from "./ui/Button";
-import Card from "./ui/Card";
-import Badge from "./ui/Badge";
-import { getCategoryPath } from "../utils";
-import SkuModal from "./modals/SkuModal";
-import { ICONS } from "../src/constants";
+import Badge from "@/src/components/ui/Badge";
+import Button from "@/src/components/ui/Button";
+import Card from "@/src/components/ui/Card";
+import { Asset, Sku } from "@/src/entities/sku/types";
+import { getCategoryPath } from "@/src/utils";
+import { useState } from "react";
+import SkuModal from "../components/SkuModal";
+import { APP_ROUTES, ICONS } from "@/src/constants";
+import { useDataContext } from "@/src/components/providers/dataProvider";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 
-interface SkuDetailViewProps {
-  sku: Sku;
-  dataMap: {
-    series: Series[];
-    categories: Category[];
-    attributes: Attribute[];
-    attributeSets: AttributeSet[];
-  };
-  onBack: () => void;
-  onEdit?: (sku: Sku) => void;
-}
-
-export default function SkuDetailView({
-  sku,
-  dataMap,
-  onBack,
-  onEdit,
-}: SkuDetailViewProps) {
+export default function SkuDetailPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [seachParams, setseachParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { skuList, seriesList, categoryList, attrList, attrSetList } =
+    useDataContext();
+  const { skuId } = useParams();
+  const sku = skuList.find((i) => i.id === skuId);
 
   const series = sku.seriesId
-    ? dataMap.series.find((s) => s.id === sku.seriesId)
+    ? seriesList.find((s) => s.id === sku.seriesId)
     : null;
   const imageUrl = sku.imageUrl || series?.imageUrl;
 
   const getAttributeName = (id: string) =>
-    dataMap.attributes.find((a) => a.id === id)?.name || "不明";
+    attrList.find((a) => a.id === id)?.name || "不明";
 
   const attributeSource = series || sku;
   const allAttributeIds = attributeSource.attributeSetIds.flatMap(
-    (setId) =>
-      dataMap.attributeSets.find((as) => as.id === setId)?.attributeIds || []
+    (setId) => attrSetList.find((as) => as.id === setId)?.attributeIds || []
   );
+
+  function handleBack() {
+    navigate(APP_ROUTES.SKU);
+  }
 
   // Combine assets from SKU and Series (optional: series assets could be inherited)
   const assets = sku.assets || [];
+  function handleUpdateData(updatedData: Omit<Sku, "id">) {}
 
   const handleSaveEdit = (updatedData: Omit<Sku, "id">) => {
-    if (onEdit) {
-      onEdit({ ...sku, ...updatedData });
-      setIsEditModalOpen(false);
-    }
+    handleUpdateData(updatedData);
+    setIsEditModalOpen(false);
   };
 
   const renderAsset = (asset: Asset) => {
@@ -182,16 +168,14 @@ export default function SkuDetailView({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button onClick={onBack} variant="secondary">
+          <Button onClick={handleBack} variant="secondary">
             &larr; SKU一覧に戻る
           </Button>
           <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
             {sku.name}
           </h1>
         </div>
-        {onEdit && (
-          <Button onClick={() => setIsEditModalOpen(true)}>編集</Button>
-        )}
+        <Button onClick={() => setIsEditModalOpen(true)}>編集</Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -300,7 +284,7 @@ export default function SkuDetailView({
             <div className="flex flex-wrap gap-2">
               {sku.categoryIds.map((catId) => (
                 <Badge key={catId}>
-                  {getCategoryPath(catId, dataMap.categories)}
+                  {getCategoryPath(catId, categoryList)}
                 </Badge>
               ))}
               {sku.categoryIds.length === 0 && (
@@ -342,12 +326,17 @@ export default function SkuDetailView({
       </div>
 
       {/* Edit Modal */}
-      {isEditModalOpen && onEdit && (
+      {isEditModalOpen && (
         <SkuModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onSave={handleSaveEdit}
-          dataMap={dataMap}
+          dataMap={{
+            series: seriesList,
+            attributes: attrList,
+            attributeSets: attrSetList,
+            categories: categoryList,
+          }}
           sku={sku}
         />
       )}

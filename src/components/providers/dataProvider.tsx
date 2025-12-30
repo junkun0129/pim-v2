@@ -15,6 +15,8 @@ import { createContext, useContext } from "react";
 import { useRole } from "@/src/entities/role/hooks";
 import { useUser } from "@/src/entities/user/hooks";
 import { useAuth } from "@/src/entities/auth/hooks";
+import { UseOrderProps } from "@/src/entities/order/types";
+import { useOrder } from "@/src/entities/order/hooks";
 
 const DataContext = createContext<
   | (UseSkuProps &
@@ -24,7 +26,8 @@ const DataContext = createContext<
       UseAttrSetProps &
       UseUserProps &
       UseRoleProps &
-      UseAuthProps)
+      UseAuthProps &
+      UseOrderProps)
   | undefined
 >(undefined);
 
@@ -37,6 +40,7 @@ export function DataProvider({ children }) {
   const roleHooks = useRole();
   const userHooks = useUser();
   const authHooks = useAuth();
+  const orderHooks = useOrder();
 
   return (
     <DataContext.Provider
@@ -49,6 +53,7 @@ export function DataProvider({ children }) {
         ...roleHooks,
         ...userHooks,
         ...authHooks,
+        ...orderHooks,
       }}
     >
       {children}

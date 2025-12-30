@@ -3,17 +3,19 @@ import SkuTable from "../components/SkuTable";
 import SkuModal from "../components/SkuModal";
 import ImportModal from "../components/ImportModal";
 import Button from "../../../components/ui/Button";
-import { ICONS } from "../../../constants";
+import { APP_ROUTES, ICONS } from "../../../constants";
 import Badge from "../../../components/ui/Badge";
 import { getCategoryPath } from "../../../utils";
 import SkuFIlterModal from "../components/SkuFIlterModal";
 import { useDataContext } from "@/src/components/providers/dataProvider";
 import { Sku } from "@/src/entities/sku/types";
+import { useNavigate } from "react-router";
 
 export default function SkuPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const navigate = useNavigate();
   const [editingSku, setEditingSku] = useState<Sku | undefined>(undefined);
   const {
     skuList,
@@ -34,7 +36,6 @@ export default function SkuPage() {
     attrList,
     attrSetList,
   } = useDataContext();
-
   // Selection Handlers
   const handleToggleSelect = (id: string) => {
     const oldSet = new Set(selectedIds);
@@ -76,7 +77,10 @@ export default function SkuPage() {
   // Generate Import Template / Sheet
   const handleGenerateTemplate = () => {};
 
-  const handleNavigateToSkuDetailPage = () => {};
+  const handleNavigateToSkuDetailPage = (id: string) => {
+    const url = APP_ROUTES.SKU_DETAIL.replace(":skuId", id);
+    navigate(url);
+  };
 
   const handleRemoveAttributeFilter = (index: number) => {
     const newArray = [...attributeFilters].filter((a, i) => i !== index);
@@ -203,10 +207,9 @@ export default function SkuPage() {
 
             {categoryFilter && (
               <Badge color="blue" className="flex items-center gap-1 pr-1">
-                カテゴリ:{" "}
-                {getCategoryPath(categoryFilter, categoryList).split(">").pop()}
+                カテゴリ: {categoryFilter.relativePaths.join(" > ")}
                 <button
-                  onClick={() => setCategoryFilter("")}
+                  onClick={() => setCategoryFilter(null)}
                   className="p-0.5 hover:bg-blue-200 rounded-full"
                 >
                   <svg
@@ -412,12 +415,6 @@ export default function SkuPage() {
           onClose={() => setIsModalOpen(false)}
           onSave={handleSaveSku}
           sku={editingSku}
-          dataMap={{
-            categories: categoryList,
-            attributes: attrList,
-            attributeSets: attrSetList,
-            series: seriesList,
-          }}
         />
       )}
 

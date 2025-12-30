@@ -1,16 +1,26 @@
-import { useEffect, useState } from "react";
-import { Category } from "./types";
+import { useState } from "react";
+import { Category, CategoryOption } from "./types";
 import { api } from "../api";
 
 export const useCategoty = () => {
   const [categoryList, setcategoryList] = useState<Category[]>([]);
-  useEffect(() => {
-    getList();
-  }, []);
+  const [categoryOptionList, setcategoryOptionList] = useState<
+    CategoryOption[]
+  >([]);
 
-  const getList = async () => {
+  const getCategoryList = async () => {
     const rawList = await api.getCategoryList();
     setcategoryList(rawList);
   };
-  return { categoryList };
+
+  async function getCategoryOptionList() {
+    const rawList = await api.getCategoryOptionList();
+    setcategoryOptionList(rawList);
+  }
+  return {
+    categoryList,
+    getCategoryList,
+    getCategoryOptionList,
+    categoryOptionList,
+  };
 };

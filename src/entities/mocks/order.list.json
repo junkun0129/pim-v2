@@ -1,31 +1,23 @@
-{
-  "success": true,
-  "statusCode": 200,
-  "data": [
-    {
-      "id": "ord1",
-      "branchId": "br1",
-      "skuId": "sku3",
-      "quantity": 10,
-      "status": "RECEIVED",
-      "orderDate": "2023-10-01"
+[
+  {
+    "id": "br1",
+    "branchId": "branch-tokyo-01",
+    "sku": {
+      "id": "sku-abc-123",
+      "name": "プレミアム・コーヒー豆 200g",
+      "skuId": "COFFEE-001",
+      "price": 1200,
+      "categoryIds": ["cat-01"],
+      "attributeSetIds": [],
+      "attributeValues": {}
     },
-    {
-      "id": "ord2",
-      "branchId": "br2",
-      "skuId": "sku1",
-      "quantity": 50,
-      "status": "SHIPPED",
-      "orderDate": "2023-10-24",
-      "driverId": "drv1"
-    },
-    {
-      "id": "ord3",
-      "branchId": "br2",
-      "skuId": "sku2",
-      "quantity": 20,
-      "status": "PENDING",
-      "orderDate": "2023-10-26"
+    "quantity": 2,
+    "status": "DELIVERING",
+    "orderDate": "2025-12-27T14:20:00Z",
+    "driver": {
+      "id": "drv-007",
+      "name": "田中 太郎",
+      "phone": "090-1234-5678"
     }
-  ]
-}
+  }
+]

@@ -1,9 +1,10 @@
 import { APP_CONFIG } from "../config";
 import { Attribute } from "./attr/type";
-import { AttributeSet } from "./attrset/type";
-import { Category } from "./category/types";
+import { AttributeSet, AttrSetOption } from "./attrset/type";
+import { Category, CategoryOption } from "./category/types";
+import { Complaint, Driver, Order, StockTransfer } from "./order/types";
 import { Role } from "./role/types";
-import { Series } from "./series/types";
+import { Series, SeriesOption } from "./series/types";
 import { GetSkuRequestBody, Sku } from "./sku/types";
 
 const BASE_URL = APP_CONFIG.apiBaseUrl;
@@ -15,6 +16,28 @@ const headers = {
 type ApiMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export const api = {
+  // --- Series ---
+  getSeriesList: async () => fetchRequest<void, Series[]>("GET", "series/list"),
+  getSeriesOptionsList: async () =>
+    fetchRequest<void, SeriesOption[]>("GET", "series/options"),
+
+  // --- Category ---
+  getCategoryList: async () =>
+    fetchRequest<void, Category[]>("GET", "category/list"),
+
+  getCategoryOptionList: async () =>
+    fetchRequest<void, CategoryOption[]>("GET", "category/options"),
+
+  // --- Attr ---
+  getAttrList: async () => fetchRequest<void, Attribute[]>("GET", "attr/list"),
+  getRoleList: async () => fetchRequest<void, Role[]>("GET", "role/list"),
+
+  getAttrSetList: async () =>
+    fetchRequest<void, AttributeSet[]>("GET", "attr-set/list"),
+  getAttrSetOptionList: async () =>
+    fetchRequest<void, AttrSetOption[]>("GET", "attr-set/options"),
+
+  // --- SKU ---
   getSkuList: async (body: GetSkuRequestBody) =>
     fetchRequest<GetSkuRequestBody, { item: Sku[]; total: number }>(
       "POST",
@@ -22,21 +45,9 @@ export const api = {
       body
     ),
 
-  getSeriesList: async () => fetchRequest<void, Series[]>("GET", "series/list"),
-
-  getCategoryList: async () =>
-    fetchRequest<void, Category[]>("GET", "category/list"),
-
-  getAttrList: async () => fetchRequest<void, Attribute[]>("GET", "attr/list"),
-  getRoleList: async () => fetchRequest<void, Role[]>("GET", "role/list"),
-
-  getAttrSetList: async () =>
-    fetchRequest<void, AttributeSet[]>("GET", "attr-set/list"),
-
   createSku: async (body: Omit<Sku, "id">) =>
     fetchRequest<Omit<Sku, "id">, Sku>("POST", "sku/create", body),
 
-  // --- SKU ---
   updateSku: (data: Sku) =>
     fetchRequest<Sku, Sku>("PUT", `sku/update/${data.id}`, data),
 
@@ -86,12 +97,6 @@ export const api = {
     fetchRequest<void, void>("DELETE", `attribute-set/delete/${id}`),
 
   // --- EXTENSIONS (OMS) ---
-  getOrderList: () => fetchRequest<void, any[]>("GET", "order/list"),
-
-  createOrder: (data: any) =>
-    fetchRequest<any, any>("POST", "order/create", data),
-
-  getInventory: () => fetchRequest<void, any>("GET", "inventory/list"),
 
   // --- EXTENSIONS (project) ---
   getProjectList: () => fetchRequest<void, any[]>("GET", "project/list"),
@@ -111,21 +116,39 @@ export const api = {
   deleteCatalogList: (id: string) =>
     fetchRequest<void, void>("DELETE", `catalog/delete/${id}`),
 
-  // --- EXTENSIONS (System) ---
   getUserList: () => fetchRequest<void, any[]>("GET", "user/list"),
+
+  // --- Order Page ---
   getBranchList: () => fetchRequest<void, any[]>("GET", "branch/list"),
+  getOrderList: (branchId: string) =>
+    fetchRequest<void, Order[]>("GET", `order/list/${branchId}`),
+  createOrder: (data: any) =>
+    fetchRequest<any, any>("POST", "order/create", data),
+  getInventory: (branchId: string) =>
+    fetchRequest<void, any>("GET", `inventory/list/${branchId}`),
+
+  getComplaintList: (branchId: string) =>
+    fetchRequest<void, Complaint[]>("GET", `complaint/list/${branchId}`),
+  getDriverList: (branchId: string) =>
+    fetchRequest<void, Driver[]>("GET", `driver/list/${branchId}`),
+  getReceiveOrderList: (branchId: string) =>
+    fetchRequest<void, Order[]>("GET", `receive-order/list/${branchId}`),
+  getTransferList: (branchId: string) =>
+    fetchRequest<void, StockTransfer[]>(
+      "GET",
+      `stock-transfer/list/${branchId}`
+    ),
+
   getChannelList: () => fetchRequest<void, any[]>("GET", "channel/list"),
+
   getChatList: () => fetchRequest<void, any[]>("GET", "chat/list"),
-  getComplaintList: () => fetchRequest<void, any[]>("GET", "complaint/list"),
   getDraftList: () => fetchRequest<void, any[]>("GET", "draft/list"),
-  getDriverList: () => fetchRequest<void, any[]>("GET", "driver/list"),
   getIdeaList: () => fetchRequest<void, any[]>("GET", "idea/list"),
+
+  getPopList: () => fetchRequest<void, any[]>("GET", "pop/list"),
+
   getNotificationList: () =>
     fetchRequest<void, any[]>("GET", "notification/list"),
-  getPopList: () => fetchRequest<void, any[]>("GET", "pop/list"),
-  getReceiveOrderList: () =>
-    fetchRequest<void, any[]>("GET", "receive-order/list"),
-  getTransferList: () => fetchRequest<void, any[]>("GET", "transfer/list"),
 };
 
 async function handleResponse<ResponseBody>(
@@ -156,6 +179,7 @@ async function fetchRequest<RequestBody, ResponseBody>(
   let response: Response;
   if (APP_CONFIG.useMockData) {
     const fileName = endpoint
+      .split("?")[0]
       .split("/")
       .filter(Boolean)
       .map((segment) =>
